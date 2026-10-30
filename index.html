@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Metal Summer 2027</title>
+<meta name="description" content="Compare the big European metal festivals of 2027: lineups, ticket ease, sentiment, price. Pick your bands and see which festival wins.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)} body{margin:0} [hidden]{display:none!important}
+/* Layout: a decision ledger. Header with the current leader, tabbed views (ranking, lineups, calendar, my bands), a side drawer per festival. */
+:root{
+  --bg:#E9ECEF; --surface:#F7F8F9; --sunk:#DEE2E7; --ink:#15181D; --muted:#59606C; --line:#C9CFD7;
+  --accent:#8F6410; --accent-soft:#E9DCC0; --on-accent:#FFFFFF;
+  --good:#2C7347; --warn:#9A6200; --bad:#A3262B; --info:#2F5D8A;
+  --good-soft:#D7E9DD; --warn-soft:#F1E3C6; --bad-soft:#F2D6D7; --info-soft:#D6E2EE;
+  --display:"Grenze Gotisch", "UnifrakturCook", Georgia, serif;
+  --sans:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r:6px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111317; --surface:#191C21; --sunk:#0C0E11; --ink:#E6E8EC; --muted:#959CA8; --line:#2B3038;
+  --accent:#D6A646; --accent-soft:#3A2F18; --on-accent:#15120A;
+  --good:#62B983; --warn:#E0A94A; --bad:#E8696A; --info:#7EA9D6;
+  --good-soft:#1C3326; --warn-soft:#3A2D14; --bad-soft:#3D1D1F; --info-soft:#1B2A3B;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111317; --surface:#191C21; --sunk:#0C0E11; --ink:#E6E8EC; --muted:#959CA8; --line:#2B3038;
+  --accent:#D6A646; --accent-soft:#3A2F18; --on-accent:#15120A;
+  --good:#62B983; --warn:#E0A94A; --bad:#E8696A; --info:#7EA9D6;
+  --good-soft:#1C3326; --warn-soft:#3A2D14; --bad-soft:#3D1D1F; --info-soft:#1B2A3B;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.45}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:20px 48px}
+h1,h2,h3{margin:0;text-wrap:balance}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+/* header */
+header.top{display:grid;grid-template-columns:1fr auto;gap:16px 24px;align-items:end;padding-bottom:16px;border-bottom:2px solid var(--ink)}
+.brand h1{font-family:var(--display);font-weight:800;font-size:clamp(40px,7vw,64px);line-height:.9;letter-spacing:.01em}
+.brand p{margin:6px 0 0;color:var(--muted);max-width:60ch}
+.leader{min-width:0;text-align:right}
+.leader .who{font-family:var(--display);font-size:30px;font-weight:600;line-height:1}
+.leader .why{color:var(--muted);font-size:12px;margin-top:4px}
+nav.tabs{display:flex;gap:4px;flex-wrap:wrap;margin:16px 0 20px}
+nav.tabs a{padding:8px 14px;border-radius:999px;text-decoration:none;color:var(--muted);font-weight:500;border:1px solid transparent}
+nav.tabs a:hover{color:var(--ink);border-color:var(--line)}
+nav.tabs a[aria-current="page"]{background:var(--ink);color:var(--bg)}
+@media (max-width:640px){header.top{grid-template-columns:1fr}.leader{text-align:left}}
+
+/* state messages */
+.state{padding:40px 20px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:var(--r)}
+
+/* ranking layout */
+.rank-grid{display:grid;grid-template-columns:260px minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:860px){.rank-grid{grid-template-columns:1fr}.rank-grid .weights{order:2}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.weights{display:flex;flex-direction:column;gap:12px;position:sticky;top:calc(env(safe-area-inset-top, 0px) + 12px)}
+@media (max-width:860px){.weights{position:static}}
+.w-row{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center}
+.w-row label{font-weight:500}
+.w-row output{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.w-row input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--accent)}
+.w-row small{grid-column:1/-1;color:var(--muted);font-size:11.5px;line-height:1.3}
+.w-row.off label{color:var(--muted)}
+.toggles{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:12px}
+.toggles label{display:flex;gap:8px;align-items:center}
+.btn{border:1px solid var(--line);background:var(--surface);padding:7px 12px;border-radius:var(--r);cursor:pointer;font-weight:500}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.small{padding:4px 9px;font-size:12.5px}
+
+.rows{display:flex;flex-direction:column;gap:0;border-top:1px solid var(--line)}
+.row{display:grid;grid-template-columns:34px minmax(150px,1.5fr) minmax(110px,1fr) 92px 96px 120px minmax(150px,1.2fr);gap:12px;align-items:center;padding:12px 6px;border-bottom:1px solid var(--line);cursor:pointer;background:none;border-left:0;border-right:0;border-top:0;text-align:left;width:100%}
+.row:hover{background:var(--surface)}
+.row .rk{font-family:var(--mono);font-size:18px;color:var(--muted)}
+.row:first-child .rk{color:var(--accent);font-weight:500}
+.fname{font-weight:600;font-size:15px;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+.cc{font-family:var(--mono);font-size:10.5px;padding:1px 5px;border:1px solid var(--line);border-radius:3px;color:var(--muted);font-weight:500}
+.sub{font-size:12px;color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.on_sale{background:var(--good-soft);color:var(--good)}
+.pill.not_yet{background:var(--info-soft);color:var(--info)}
+.pill.sold_out{background:var(--bad-soft);color:var(--bad)}
+.tier{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.pips{display:inline-flex;gap:3px}
+.pips i{width:8px;height:8px;border-radius:2px;background:var(--line)}
+.pips i.f{background:var(--ink)}
+.trend{font-size:12px;font-weight:600}
+.trend.up{color:var(--good)} .trend.down{color:var(--bad)} .trend.flat{color:var(--muted)}
+.scorebar{display:grid;grid-template-columns:1fr 34px;gap:8px;align-items:center}
+.bar{height:8px;background:var(--sunk);border-radius:999px;overflow:hidden;display:flex}
+.bar span{display:block;height:100%}
+.score{font-family:var(--mono);font-weight:500;font-size:16px;text-align:right}
+.est{color:var(--muted)}
+.row-head{display:grid;grid-template-columns:34px minmax(150px,1.5fr) minmax(110px,1fr) 92px 96px 120px minmax(150px,1.2fr);gap:12px;padding:0 6px 8px}
+@media (max-width:1040px){
+  .row,.row-head{grid-template-columns:30px minmax(0,1fr) 92px minmax(120px,0.9fr)}
+  .row .c-date,.row .c-price,.row .c-sent,.row-head .c-date,.row-head .c-price,.row-head .c-sent{display:none}
+}
+@media (max-width:520px){
+  .row,.row-head{grid-template-columns:26px minmax(0,1fr) 92px}
+  .row .c-line{display:none}
+  .row .c-score,.row-head .c-score{grid-column:2/-1}
+  .row-head .c-score{display:none}
+}
+.legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:var(--muted)}
+.legend span{display:inline-flex;gap:5px;align-items:center}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.note{font-size:12px;color:var(--muted);margin-top:12px;max-width:80ch}
+
+/* lineups */
+.lineup-tools{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:16px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field input,.field select,.field textarea{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:7px 10px;min-width:0}
+.field textarea{min-height:70px;resize:vertical}
+.found{margin:0 0 16px;font-size:13px}
+.posters{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.poster{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0}
+.poster h3{font-family:var(--display);font-size:28px;font-weight:600;line-height:1}
+.poster .meta{display:flex;justify-content:space-between;gap:8px;margin:6px 0 12px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.bill{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline}
+.bill span{white-space:nowrap}
+.bill .b1{font-size:21px;font-weight:600;letter-spacing:.01em}
+.bill .b2{font-size:15px;font-weight:500}
+.bill .b3{font-size:12.5px}
+.bill .shared{color:var(--muted)}
+.bill .shared sup{font-family:var(--mono);font-size:9px;margin-left:1px}
+.bill .uniq{color:var(--ink)}
+.bill .pick{background:var(--accent-soft);color:var(--ink);border-radius:3px;padding:0 3px;box-shadow:inset 0 -2px 0 var(--accent)}
+.bill .hit{outline:2px solid var(--accent);border-radius:3px}
+.uniq-meter{display:flex;align-items:center;gap:8px;font-size:12px}
+.uniq-meter .bar{width:90px}
+.empty-bill{color:var(--muted);font-style:italic;font-size:13px}
+.two{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;margin-bottom:20px}
+@media (max-width:860px){.two{grid-template-columns:1fr}}
+.scroll-x{overflow-x:auto}
+table.heat{border-collapse:collapse;font-size:11.5px}
+table.heat th{font-weight:500;color:var(--muted);padding:3px 4px;text-align:right;white-space:nowrap}
+table.heat thead th{writing-mode:vertical-rl;transform:rotate(180deg);text-align:left;height:130px;vertical-align:bottom}
+table.heat td{width:30px;height:26px;text-align:center;font-family:var(--mono);border:1px solid var(--bg)}
+.toplist{display:flex;flex-direction:column;gap:6px;font-size:13px}
+.toplist div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dotted var(--line);padding-bottom:4px}
+
+/* calendar */
+.cal{position:relative;min-width:760px}
+.cal-head{display:grid;grid-template-columns:150px 1fr;font-size:11px;color:var(--muted)}
+.cal-months{position:relative;height:22px}
+.cal-months span{position:absolute;top:0;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.cal-row{display:grid;grid-template-columns:150px 1fr;align-items:center;height:34px;border-top:1px solid var(--line)}
+.cal-row .nm{font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:8px}
+.cal-track{position:relative;height:100%}
+.cal-track .wk{position:absolute;top:0;bottom:0;width:1px;background:var(--line);opacity:.6}
+.cal-bar{position:absolute;top:8px;height:18px;border-radius:4px;background:var(--ink);color:var(--bg);font-size:10.5px;font-family:var(--mono);padding:0 5px;white-space:nowrap;overflow:hidden;line-height:18px;cursor:pointer;border:0}
+.cal-bar.clash{background:var(--accent);color:var(--on-accent)}
+.cal-bar.sold_out{background:repeating-linear-gradient(135deg,var(--bad) 0 6px,color-mix(in srgb,var(--bad) 70%,transparent) 6px 12px);color:#fff}
+.clashes{margin-top:16px;display:flex;flex-direction:column;gap:6px;font-size:13px}
+
+/* my bands */
+.picks-add{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:16px}
+.picks-add .field{flex:1 1 220px}
+table.matrix{border-collapse:collapse;font-size:12.5px;width:max-content}
+table.matrix th,table.matrix td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
+table.matrix th:first-child,table.matrix td:first-child{text-align:left;position:sticky;left:0;background:var(--bg)}
+table.matrix thead th{font-weight:500;color:var(--muted);font-size:11.5px}
+.dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--accent)}
+.tierchip{font-size:10.5px;font-weight:600;padding:1px 6px;border-radius:3px;margin-left:6px;text-transform:uppercase;letter-spacing:.05em}
+.t3{background:var(--accent);color:var(--on-accent)} .t2{background:var(--accent-soft);color:var(--ink)} .t1{background:var(--sunk);color:var(--muted)}
+.x{border:0;background:none;color:var(--muted);cursor:pointer;padding:0 4px;font-size:15px;line-height:1}
+.x:hover{color:var(--bad)}
+
+/* drawer */
+.scrim{position:fixed;inset:0;background:color-mix(in srgb,var(--sunk) 70%,transparent);z-index:20}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(640px,100%);background:var(--bg);border-left:1px solid var(--line);z-index:21;overflow-y:auto;
+  padding:calc(env(safe-area-inset-top, 0px) + 20px) max(20px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 40px) 20px}
+.drawer h2{font-family:var(--display);font-size:44px;font-weight:800;line-height:.95}
+.drawer section{margin-top:22px;display:flex;flex-direction:column;gap:8px}
+.drawer h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line);padding-bottom:4px}
+.dclose{position:sticky;top:0;float:right;margin-left:12px}
+.kv{display:grid;grid-template-columns:120px 1fr;gap:4px 12px;font-size:13px}
+.kv dt{color:var(--muted)} .kv dd{margin:0;min-width:0}
+.comp{display:grid;grid-template-columns:130px 1fr 40px;gap:8px;align-items:center;font-size:12.5px}
+.yr{display:grid;grid-template-columns:44px 30px 1fr;gap:8px;font-size:13px;align-items:start}
+.yr .sc{font-family:var(--mono);font-weight:600;text-align:center;border-radius:3px;padding:0 2px}
+.s2{background:var(--good);color:var(--bg)} .s1{background:var(--good-soft);color:var(--good)} .s0{background:var(--sunk);color:var(--muted)} .s-1{background:var(--bad-soft);color:var(--bad)} .s-2{background:var(--bad);color:var(--bg)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:2px 4px 2px 10px;font-size:12.5px}
+.chip.u{border-color:var(--accent)}
+ul.plain{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px;font-size:13px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-grid .full{grid-column:1/-1}
+@media (max-width:480px){.form-grid{grid-template-columns:1fr}.kv{grid-template-columns:1fr}.comp{grid-template-columns:100px 1fr 34px}}
+.live{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin:-8px 0 16px;min-height:28px}
+.live .lbar{flex:0 0 140px;height:6px;background:var(--sunk);border-radius:999px;overflow:hidden}
+.live .lbar span{display:block;height:100%;background:var(--accent);transition:width .3s}
+.live .dotl{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.live.running .dotl{background:var(--accent)} .live.ok .dotl{background:var(--good)} .live.warn .dotl{background:var(--warn)}
+@media (prefers-reduced-motion:no-preference){.live.running .dotl{animation:pulse 1s ease-in-out infinite alternate}@keyframes pulse{from{opacity:.3}to{opacity:1}}}
+.newtag{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;background:var(--good-soft);color:var(--good);border-radius:3px;padding:0 4px;margin-left:3px;vertical-align:1px}
+.bandlist{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.brow{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,2fr) auto;gap:12px;align-items:center;padding:8px 4px;border-bottom:1px solid var(--line)}
+.brow .bn{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.brow.picked .bn{color:var(--accent)}
+.fchips{display:flex;flex-wrap:wrap;gap:4px;min-width:0}
+.fchip{font-size:11.5px;border:1px solid var(--line);border-radius:999px;padding:1px 8px;background:var(--surface);cursor:pointer;color:var(--ink)}
+.fchip:hover{border-color:var(--ink)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:4px 9px;font-size:12px;cursor:pointer;color:var(--muted)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.letter{font-family:var(--display);font-size:26px;padding:12px 4px 2px;border-bottom:1px solid var(--line)}
+@media (max-width:640px){.brow{grid-template-columns:1fr auto}.brow .fchips{grid-column:1/-1;order:3}}
+.addb{width:76px;padding:4px 6px;font-size:12.5px}
+.hbin{width:76px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:4px 6px;font-size:13px;font-family:var(--mono);color:var(--ink);text-align:right}
+.hbin::placeholder{color:var(--muted);text-align:right}
+.hbin.on{border-color:var(--accent);background:var(--accent-soft);font-weight:600}
+.hbsel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:4px 6px;font-size:12.5px;font-family:var(--mono);color:var(--muted);cursor:pointer}
+.hbsel.on{border-color:var(--accent);color:var(--ink);background:var(--accent-soft);font-weight:500}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+table.hbm td,table.hbm th{padding:6px 8px}
+table.hbm th:first-child,table.hbm td:first-child{background:var(--surface);box-shadow:1px 0 0 var(--line)}
+table.hbm thead th{vertical-align:bottom}
+.colh{border:0;background:none;color:var(--muted);font:inherit;font-size:11.5px;cursor:pointer;padding:0;white-space:nowrap}
+.colh:hover{color:var(--ink);text-decoration:underline}
+.crown{display:block;font-family:var(--mono);font-size:10px;color:var(--accent);font-weight:600}
+.hbdot{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;border-radius:999px;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--on-accent);background:color-mix(in srgb,var(--accent) calc(var(--a)*100%),var(--surface))}
+table.hbm tfoot th,table.hbm tfoot td{border-top:2px solid var(--ink);border-bottom:0;position:sticky;bottom:0;background:var(--surface)}
+table.hbm tfoot tr+tr th,table.hbm tfoot tr+tr td{border-top:1px solid var(--line)}
+table.hbm tfoot th{text-align:left;font-weight:600;left:0;z-index:1}
+.hbtot td b{font-size:15px}
+.hbdot.neg{background:var(--bad);color:var(--bg)}
+.hbtot td.best b{color:var(--accent)}
+.mbar{height:4px;background:var(--sunk);border-radius:999px;margin-top:4px;overflow:hidden;min-width:28px}
+.mbar span{display:block;height:100%;background:var(--accent)}
+table.hbm td:first-child .pn{font-weight:500}
+.hblist{display:none;margin-top:16px}
+.hbli{display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:center;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:8px 0;cursor:pointer;color:var(--ink)}
+.hbli b{font-size:18px;color:var(--accent)}
+@media (max-width:640px){.hblist{display:block}}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:999px;z-index:30;font-size:13px}
+.src{font-size:12px;word-break:break-all}
+.ro-banner{font-size:12px;color:var(--warn);margin-top:6px}
+@media (prefers-reduced-motion:no-preference){.drawer{animation:slide .18s ease-out}@keyframes slide{from{transform:translateX(24px);opacity:.6}to{transform:none;opacity:1}}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Metal Summer 2027</h1>
+      <p id="subline">Major European metal festivals, scored on what matters to you. Pick one.</p>
+    </div>
+    <div class="leader" id="leader" aria-live="polite"></div>
+  </header>
+  <nav class="tabs" aria-label="Views">
+    <a href="#ranking" data-v="ranking">Ranking</a>
+    <a href="#lineups" data-v="lineups">Lineups</a>
+    <a href="#bands" data-v="bands">All bands</a>
+    <a href="#calendar" data-v="calendar">Calendar</a>
+    <a href="#my-bands" data-v="my-bands">My bands</a>
+  </nav>
+  <div id="live" class="live" aria-live="polite"></div>
+  <main id="view"><div class="state">Loading festival data…</div></main>
+</div>
+<div id="drawer-root"></div>
+<div id="toast-root"></div>
+
+<script>
+(function(){
+const COMPS=[
+  {k:'fit',  label:'Your bands',   def:6, help:'Rewards festivals booking your bands, weighted by the Headbang score you gave each one.'},
+  {k:'sent', label:'Sentiment',    def:4, help:'Rewards festivals whose last two editions were well received and are trending up.'},
+  {k:'ease', label:'Ticket ease',  def:3, help:'Rewards festivals where you can still buy at face value. Sold out gets nothing.'},
+  {k:'scale',label:'Scale',        def:2, help:'Rewards Hellfest/Wacken-size crowds and production over mid-size festivals.'},
+  {k:'metal',label:'Metal focus',  def:2, help:'Rewards all-metal bills. Mixed rock/pop bills (e.g. Nova Rock) get less.'},
+  {k:'uniq', label:'Lineup uniqueness', def:1, help:'Rewards bills with bands you can’t see at the other festivals here.'},
+  {k:'price',label:'Price',        def:1, help:'Rewards cheaper passes (camping add-on included where known).'},
+  {k:'camp', label:'Camping',      def:1, help:'Rewards camping included in the ticket; paid add-on scores less; none scores nothing.'},
+];
+const COMP_COLOR={fit:'var(--accent)',sent:'var(--good)',ease:'var(--info)',scale:'var(--ink)',metal:'var(--bad)',uniq:'var(--warn)',price:'var(--muted)',camp:'var(--line)'};
+const STATUS={on_sale:'On sale',not_yet:'Not on sale yet',sold_out:'Sold out'};
+// Headbang score: how hard you'd headbang to this band, 1–10 (old Must see/Want/Bonus picks become 9/6/3)
+const pScore=p=>{ const v=Number(p?.score); return Number.isFinite(v)?v:0; };
+const HB_DEFAULT=50;
+const fmtN=v=>Number.isInteger(v)?String(v):String(Math.round(v*100)/100);
+const hbInput=(name,val,cls)=>`<input type="number" step="any" inputmode="decimal" class="hbin ${val!=null?'on':''} ${cls||''}" data-hb="${esc(name)}" value="${val!=null?esc(fmtN(val)):''}" placeholder="score" aria-label="Headbang score for ${esc(name)}">`;
+
+let db=null, canWrite=true; const EDIT=false;
+let fests=[], picks=[], weights=Object.fromEntries(COMPS.map(c=>[c.k,c.def])), filters={hideSold:false,bigOnly:false};
+let loaded=false, dbState='loading', openId=null, search='', sync=null;
+let settingsVersionTimer=null;
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\(.*?\)/g,'').replace(/\bfeat\..*$/,'').replace(/&/g,'and').replace(/^the\s+/,'').replace(/[^a-z0-9]+/g,' ').trim()
+  .replace(/^cavalera conspiracy$/,'cavalera');
+const slug=s=>norm(s).replace(/ /g,'-').slice(0,120)||('b'+Date.now());
+const today=()=>new Date().toISOString().slice(0,10);
+const fmtDate=(a,b)=>{ if(!a) return 'Dates TBA'; const o={day:'numeric',month:'short'}; const A=new Date(a+'T00:00:00'),B=b?new Date(b+'T00:00:00'):null;
+  const dA=A.toLocaleDateString('en-GB',{weekday:'short'}); const dB=B?B.toLocaleDateString('en-GB',{weekday:'short'}):'';
+  return `${dA} ${A.toLocaleDateString('en-GB',o)}${B?` – ${dB} ${B.toLocaleDateString('en-GB',o)}`:''}`; };
+const price=f=> (f.price_2027??f.price_2026);
+const priceEff=f=> price(f)==null?null: price(f)+(f.camping_type==='addon'&&f.camping_addon_eur?f.camping_addon_eur:0);
+const toast=msg=>{const r=$('#toast-root'); r.innerHTML=`<div class="toast" role="status">${esc(msg)}</div>`; clearTimeout(toast.t); toast.t=setTimeout(()=>r.innerHTML='',2400);};
+
+/* ---------- scoring ---------- */
+function analyse(){
+  const idx=new Map();
+  fests.forEach(f=>{ const seen=new Set(); (f.lineup||[]).forEach(b=>{const n=norm(b); if(!n||seen.has(n))return; seen.add(n);
+    if(!idx.has(n)) idx.set(n,{name:b,fests:new Set()}); else if(b.length<idx.get(n).name.length) idx.get(n).name=b; idx.get(n).fests.add(f.id);}); f._norms=seen; });
+  const pickW=picks.reduce((a,p)=>a+Math.max(0,pScore(p)),0)||1;
+  const prices=fests.map(priceEff).filter(v=>v!=null); const pmin=Math.min(...prices), pmax=Math.max(...prices);
+  fests.forEach(f=>{
+    const c={}, est={};
+    const n=f._norms.size;
+    if(n>=5){ let u=0; f._norms.forEach(k=>{ if(idx.get(k).fests.size===1) u++; }); c.uniq=u/n*100; f._uniqCount=u; } else { c.uniq=null; f._uniqCount=null; }
+    if(picks.length && n>0){ let s=0; f._picked=[]; picks.forEach(p=>{ if(f._norms.has(norm(p.name))){ s+=pScore(p); f._picked.push(p);} }); c.fit=Math.max(0,Math.min(100,s/pickW*100)); f._hb=s; }
+    else { c.fit=null; f._picked=[]; f._hb=0; }
+    const ys=Object.keys(f.sentiment||{}).sort(); const pts=ys.map(y=>[+y,f.sentiment[y].score]).filter(p=>typeof p[1]==='number');
+    if(pts.length){ const last2=pts.slice(-2); const recent=last2.reduce((a,p)=>a+p[1],0)/last2.length;
+      let slope=0; if(pts.length>1){ const mx=pts.reduce((a,p)=>a+p[0],0)/pts.length, my=pts.reduce((a,p)=>a+p[1],0)/pts.length;
+        let nu=0,de=0; pts.forEach(p=>{nu+=(p[0]-mx)*(p[1]-my); de+=(p[0]-mx)**2;}); slope=de?nu/de:0; }
+      f._slope=slope; f._recent=recent;
+      c.sent=0.75*((recent+2)/4*100)+0.25*((Math.max(-.5,Math.min(.5,slope))+.5)*100);
+    } else c.sent=null;
+    c.ease = f.ticket_status==='sold_out'?0:((Number(f.ticket_ease)||1)-1)/4*100;
+    c.scale=((Number(f.scale)||1)-1)/4*100;
+    c.metal=f.metal_focus==null?null:((Number(f.metal_focus)||1)-1)/4*100;
+    const pe=priceEff(f); c.price = pe==null?null:(pmax===pmin?100:(pmax-pe)/(pmax-pmin)*100);
+    c.camp={included:100,addon:60,none:0}[f.camping_type]??50;
+    f._c=c; f._est=est;
+  });
+  // fill unknowns with the median of known values, flagged as estimates
+  COMPS.forEach(({k})=>{ const known=fests.map(f=>f._c[k]).filter(v=>v!=null).sort((a,b)=>a-b);
+    const med=known.length?known[Math.floor((known.length-1)/2)]:50;
+    fests.forEach(f=>{ if(f._c[k]==null){ f._c[k]=med; f._est[k]=true; } }); });
+  const active=COMPS.filter(c=>weights[c.k]>0 && !(c.k==='fit'&&!picks.length));
+  const W=active.reduce((a,c)=>a+weights[c.k],0)||1;
+  fests.forEach(f=>{ f._parts=active.map(c=>({k:c.k,v:f._c[c.k]*weights[c.k]/W})); f._score=f._parts.reduce((a,p)=>a+p.v,0); });
+  fests.sort((a,b)=>b._score-a._score);
+  return idx;
+}
+const trendOf=f=> f._slope==null?['flat','—']: f._slope>0.15?['up','▲ Rising']: f._slope<-0.15?['down','▼ Falling']:['flat','▬ Steady'];
+
+/* ---------- small renderers ---------- */
+function spark(f){
+  const ys=['2022','2023','2024','2025','2026']; const w=84,h=26,px=4;
+  const pts=ys.map((y,i)=>{const s=f.sentiment?.[y]?.score; return s==null?null:[px+i*(w-2*px)/4, h/2 - s*(h/2-4)/2];});
+  const d=pts.filter(Boolean).map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const last=pts.filter(Boolean).slice(-1)[0];
+  const [t]=trendOf(f); const col=t==='up'?'var(--good)':t==='down'?'var(--bad)':'var(--muted)';
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="Sentiment 2022 to 2026"><line x1="0" x2="${w}" y1="${h/2}" y2="${h/2}" stroke="var(--line)" stroke-dasharray="2 2"/>`+
+    `<path d="${d}" fill="none" stroke="${col}" stroke-width="1.6" stroke-linejoin="round"/>`+(last?`<circle cx="${last[0]}" cy="${last[1]}" r="2.6" fill="${col}"/>`:'')+`</svg>`;
+}
+const pips=n=>`<span class="pips" aria-label="${n} of 5">${[1,2,3,4,5].map(i=>`<i class="${i<=n?'f':''}"></i>`).join('')}</span>`;
+const statusPill=f=>`<span class="pill ${esc(f.ticket_status)}">${esc(STATUS[f.ticket_status]||f.ticket_status||'Unknown')}</span>`;
+const scoreBar=f=>`<div class="scorebar"><div class="bar">${f._parts.map(p=>`<span style="width:${p.v}%;background:${COMP_COLOR[p.k]}" title="${esc(COMPS.find(c=>c.k===p.k).label)}: ${p.v.toFixed(1)} pts"></span>`).join('')}</div><span class="score">${Math.round(f._score)}</span></div>`;
+
+/* ---------- views ---------- */
+function wLabel(k){ if(k==='fit'&&!picks.length) return 'off'; const act=COMPS.filter(c=>weights[c.k]>0&&!(c.k==='fit'&&!picks.length)); const W=act.reduce((a,c)=>a+weights[c.k],0); const v=weights[k];
+  return v? `${v} · ${Math.round(v/W*100)}%` : '0 · ignored'; }
+function visible(){ return fests.filter(f=>!(filters.hideSold&&f.ticket_status==='sold_out')&&!(filters.bigOnly&&(f.scale||0)<4)); }
+
+function renderRanking(){
+  const list=visible();
+  const wHtml=COMPS.map(c=>{ const off=c.k==='fit'&&!picks.length; return `<div class="w-row ${off?'off':''}">
+      <label for="w-${c.k}">${esc(c.label)}</label><output id="o-${c.k}">${wLabel(c.k)}</output>
+      <input type="range" id="w-${c.k}" min="0" max="10" step="1" value="${weights[c.k]}" data-w="${c.k}" aria-valuetext="${esc(wLabel(c.k))}">
+      <small>${off?'Add bands under My bands to switch this on.':esc(c.help)}</small></div>`; }).join('');
+  $('#view').innerHTML=`<div class="rank-grid">
+    <aside class="panel weights" aria-label="Weights">
+      <div class="label">How much each factor counts</div><p class="muted" style="margin:0;font-size:11.5px">0 = ignore, 10 = matters most. The percentage is that factor’s share of the final score.</p>${wHtml}
+      <div class="toggles">
+        <label><input type="checkbox" id="f-sold" ${filters.hideSold?'checked':''}> Hide sold-out festivals</label>
+        <label><input type="checkbox" id="f-big" ${filters.bigOnly?'checked':''}> Big names only (scale 4–5)</label>
+      </div>
+      <button class="btn small" id="w-reset" type="button">Reset weights</button>
+    </aside>
+    <div style="min-width:0" id="rankrows"></div>
+    </div>`;
+  renderRows();
+  const ch=[...(sync?.changes||[]),...liveLog()].sort((a,b)=>String(a.date).localeCompare(String(b.date))).slice(-12).reverse();
+  $('#rankrows').insertAdjacentHTML('afterend',`<section class="panel" style="margin-top:20px" aria-label="Recent changes"><div class="label" style="margin-bottom:8px">Recent updates</div>${ch.length?`<ul class="plain">${ch.map(c=>`<li><span class="mono muted">${esc(c.date)}</span> <b>${esc(c.festival||'')}</b> ${esc(c.text)}${c.url?` · <a href="${esc(c.url)}" target="_blank" rel="noopener">source</a>`:''}</li>`).join('')}</ul>`:'<p class="muted" style="margin:0;font-size:13px">Every few hours, this page re-reads each festival’s lineup listing in your browser and adds newly announced bands. Hand-checked updates also show here.</p>'}</section>`);
+  $('#view').querySelectorAll('input[type=range]').forEach(el=>el.addEventListener('input',e=>{ const k=e.target.dataset.w; weights[k]=+e.target.value; COMPS.forEach(c=>{const o=$('#o-'+c.k); if(o) o.textContent=wLabel(c.k);}); saveSettings(); analyse(); renderLeader(); renderRows(); }));
+  $('#f-sold').onchange=e=>{filters.hideSold=e.target.checked; saveSettings(); render();};
+  $('#f-big').onchange=e=>{filters.bigOnly=e.target.checked; saveSettings(); render();};
+  $('#w-reset').onclick=()=>{ COMPS.forEach(c=>weights[c.k]=c.def); saveSettings(); render(); };
+}
+function renderRows(){
+  const list=visible();
+  const el=$('#rankrows'); if(!el) return;
+  el.innerHTML=`<div class="row-head label"><span>#</span><span>Festival</span><span class="c-date">2027 dates</span><span>Tickets</span><span class="c-price">Pass</span><span class="c-sent">Sentiment</span><span class="c-score">Lineup · score</span></div>
+      <div class="rows">${list.map((f,i)=>{ const [tc,tl]=trendOf(f);
+        return `<button class="row" type="button" data-open="${esc(f.id)}">
+          <span class="rk">${i+1}</span>
+          <span><span class="fname">${esc(f.name)} <span class="cc">${esc(f.cc)}</span></span><span class="sub"><span class="tier">${esc(f.tier)}</span> · ${esc(f.city)}</span></span>
+          <span class="c-date"><span class="mono" style="font-size:12.5px">${esc(fmtDate(f.start,f.end))}</span><br><span class="sub">${f.days||'?'} days</span></span>
+          <span>${statusPill(f)}<br>${pips(f.ticket_status==='sold_out'?1:(f.ticket_ease||1))}</span>
+          <span class="c-price mono">${price(f)!=null?'€'+Math.round(price(f)):'<span class="est">€ ?</span>'}<br><span class="sub">${f.price_2027!=null?'2027':f.price_2026!=null?'2026 price':'not found'}${f.camping_type==='addon'?' + camp':''}</span></span>
+          <span class="c-sent">${spark(f)}<br><span class="trend ${tc}">${tl}</span></span>
+          <span class="c-score"><span class="sub c-line">${(f.lineup||[]).length?`${f.lineup.length} bands · ${f._uniqCount!=null?Math.round(f._uniqCount/f._norms.size*100)+'% unique':'too few to compare'}`:'Lineup not announced'}${picks.length?` · <b style="color:var(--accent)">${f._picked.length} of yours</b>`:''}</span>${scoreBar(f)}</span>
+        </button>`;}).join('') || '<div class="state">No festivals match these filters.</div>'}</div>
+      <div class="legend">${COMPS.filter(c=>!(c.k==='fit'&&!picks.length)).map(c=>`<span><i style="background:${COMP_COLOR[c.k]}"></i>${esc(c.label)}</span>`).join('')}</div>
+      <p class="note">Score = weighted average of the components (0–100). Where a value is unknown (lineup not announced, price not found) the festival gets the median of the others for that component, marked “est.” in its detail panel. Click a festival for sentiment by year, ratings, pricing notes, sources and lineup editing.</p>`;
+  el.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>{ openId=b.dataset.open; renderDrawer(lastIdx); }));
+}
+
+function renderLineups(idx){
+  const withL=fests.filter(f=>(f.lineup||[]).length).sort((a,b)=>(a.start||'').localeCompare(b.start||''));
+  const pickSet=new Set(picks.map(p=>norm(p.name)));
+  const q=norm(search);
+  let found='';
+  if(q){ const hits=[...idx.entries()].filter(([k])=>k.includes(q)).slice(0,8);
+    found= hits.length? hits.map(([k,v])=>`<b>${esc(v.name)}</b>: ${[...v.fests].map(id=>esc(fests.find(f=>f.id===id).name)).join(', ')}`).join('<br>') : `No announced 2027 festival lists “${esc(search)}” yet.`; }
+  // overlap matrix
+  const ids=withL.map(f=>f.id);
+  let maxO=1; const ov={}; ids.forEach(a=>ids.forEach(b=>{ if(a===b) return; const A=fests.find(f=>f.id===a)._norms,B=fests.find(f=>f.id===b)._norms; let n=0; A.forEach(x=>{if(B.has(x))n++;}); ov[a+'|'+b]=n; if(n>maxO)maxO=n; }));
+  const heat=`<div class="scroll-x"><table class="heat"><thead><tr><th></th>${withL.map(f=>`<th scope="col">${esc(f.name)}</th>`).join('')}</tr></thead><tbody>${withL.map(a=>`<tr><th scope="row">${esc(a.name)}</th>${withL.map(b=>{ if(a.id===b.id) return `<td style="background:var(--sunk)"></td>`; const n=ov[a.id+'|'+b.id]; const pct=Math.round(n/maxO*85);
+      return `<td style="background:color-mix(in srgb,var(--accent) ${pct}%,var(--surface));color:${pct>45?'var(--on-accent)':'var(--ink)'}" title="${esc(a.name)} & ${esc(b.name)}: ${n} shared bands">${n||''}</td>`;}).join('')}</tr>`).join('')}</tbody></table></div>`;
+  const top=[...idx.values()].filter(v=>v.fests.size>=3).sort((a,b)=>b.fests.size-a.fests.size||a.name.localeCompare(b.name)).slice(0,14);
+  const posters=fests.slice().sort((a,b)=>(a.start||'9').localeCompare(b.start||'9')).map(f=>{
+    const L=f.lineup||[]; const pct=f._uniqCount!=null?Math.round(f._uniqCount/f._norms.size*100):null;
+    const bill=L.length? L.map((b,i)=>{ const n=norm(b); const cnt=idx.get(n)?.fests.size||1; const cls=[i<3?'b1':i<12?'b2':'b3', cnt>1?'shared':'uniq', pickSet.has(n)?'pick':'', q&&n.includes(q)?'hit':''].join(' '); const nw=f._newBands?.has(n);
+      return `<span class="${cls}" title="${cnt>1?'Also at '+[...idx.get(n).fests].filter(x=>x!==f.id).map(x=>fests.find(z=>z.id===x).name).join(', '):'Only here (so far)'}">${esc(b)}${cnt>1?`<sup>${cnt}</sup>`:''}${nw?'<span class="newtag">new</span>':''}</span>`; }).join('')
+      : `<span class="empty-bill">No 2027 bands announced yet${f.ticket_status==='sold_out'?' (sold out anyway)':''}.</span>`;
+    return `<article class="poster"><h3>${esc(f.name)}</h3>
+      <div class="meta"><span class="mono">${esc(fmtDate(f.start,f.end))}</span><span>${L.length} announced</span></div>
+      ${pct!=null?`<div class="uniq-meter"><div class="bar"><span style="width:${pct}%;background:var(--warn)"></span></div><span>${pct}% exclusive (${f._uniqCount} of ${f._norms.size})</span></div><div style="height:10px"></div>`:''}
+      <div class="bill">${bill}</div>
+      <div style="margin-top:12px"><button class="btn small" type="button" data-open="${esc(f.id)}">Edit lineup</button></div></article>`; }).join('');
+  $('#view').innerHTML=`<div class="lineup-tools">
+      <div class="field" style="flex:1 1 260px"><label class="label" for="bsearch">Find a band</label><input id="bsearch" type="search" placeholder="e.g. Mercyful Fate" value="${esc(search)}" autocomplete="off"></div>
+      <p class="muted" style="margin:0;font-size:12px;max-width:52ch">Bold = only at this festival so far. Grey with a number = also booked at that many tracked festivals. <span class="pick" style="background:var(--accent-soft);box-shadow:inset 0 -2px 0 var(--accent);padding:0 3px">Highlighted</span> = one of your bands.</p>
+    </div>
+    ${found?`<p class="found">${found}</p>`:''}
+    <div class="two">
+      <div class="panel" style="min-width:0"><div class="label" style="margin-bottom:8px">Shared bands between festivals</div>${withL.length>1?heat:'<p class="muted">Needs at least two announced lineups.</p>'}</div>
+      <div class="panel"><div class="label" style="margin-bottom:8px">Most-booked bands of 2027 so far</div><div class="toplist">${top.map(v=>`<div><span>${esc(v.name)}</span><span class="mono muted">${v.fests.size} fests</span></div>`).join('')||'<span class="muted">None yet.</span>'}</div></div>
+    </div>
+    <div class="posters">${posters}</div>`;
+  const s=$('#bsearch'); s.addEventListener('input',e=>{ search=e.target.value; clearTimeout(s.t); s.t=setTimeout(()=>{render(); const el=$('#bsearch'); el.focus(); el.setSelectionRange(el.value.length,el.value.length);},250); });
+}
+
+function renderCalendar(){
+  const start=new Date('2027-06-01T00:00:00'), end=new Date('2027-09-01T00:00:00'); const span=(end-start)/864e5;
+  const pos=d=>((new Date(d+'T00:00:00')-start)/864e5)/span*100;
+  const list=fests.filter(f=>f.start).sort((a,b)=>a.start.localeCompare(b.start));
+  const overl=(a,b)=>a.start<=b.end&&b.start<=a.end;
+  const clashPairs=[]; list.forEach((a,i)=>list.slice(i+1).forEach(b=>{ if(overl(a,b)) clashPairs.push([a,b]); }));
+  const clashIds=new Set(clashPairs.flat().map(f=>f.id));
+  const weeks=[]; for(let d=new Date('2027-06-07T00:00:00'); d<end; d.setDate(d.getDate()+7)) weeks.push(((d-start)/864e5)/span*100); // Mondays
+  const months=[['June',0],['July',30/span*100],['August',61/span*100]];
+  $('#view').innerHTML=`<div class="panel scroll-x"><div class="cal">
+    <div class="cal-head"><span></span><div class="cal-months">${months.map(([m,p])=>`<span style="left:${p}%">${m}</span>`).join('')}</div></div>
+    ${list.map(f=>`<div class="cal-row"><span class="nm">${esc(f.name)}</span><div class="cal-track">${weeks.map(w=>`<span class="wk" style="left:${w}%"></span>`).join('')}
+      <button type="button" class="cal-bar ${f.ticket_status==='sold_out'?'sold_out':clashIds.has(f.id)?'clash':''}" data-open="${esc(f.id)}" style="left:${pos(f.start)}%;width:calc(${pos(f.end)-pos(f.start)+100/span}% )" title="${esc(f.name)}: ${esc(fmtDate(f.start,f.end))}">${+f.start.slice(8)}–${+(f.end||f.start).slice(8)}</button></div></div>`).join('')}
+  </div>
+  <div class="legend"><span><i style="background:var(--ink)"></i>No clash</span><span><i style="background:var(--accent)"></i>Overlaps another festival</span><span><i style="background:var(--bad)"></i>Sold out</span><span>Grid lines are Mondays.</span></div></div>
+  <div class="clashes"><div class="label">Date overlaps</div>${clashPairs.map(([a,b])=>`<div>${esc(a.name)} and ${esc(b.name)} <span class="muted">(${esc(fmtDate(a.start,a.end))} / ${esc(fmtDate(b.start,b.end))})</span></div>`).join('')||'<div class="muted">None.</div>'}
+  <p class="note">You are going to one festival, so clashes mostly matter for routing tours: bands often play festivals on the same weekend circuit (for example Brutal Assault, Bloodstock and Alcatraz share many 2027 acts).</p></div>`;
+}
+
+function renderPicks(idx){
+  const all=[...idx.values()].map(v=>v.name).sort((a,b)=>a.localeCompare(b));
+  const cols=fests.slice().sort((a,b)=>(b._hb-a._hb)||(b._picked.length-a._picked.length)||(b._score-a._score));
+  const maxHb=Math.max(1e-9,...cols.map(f=>Math.abs(f._hb))); const totalHb=picks.reduce((a,p)=>a+pScore(p),0);
+  const rows=picks.slice().sort((a,b)=>(pScore(b)-pScore(a))||a.name.localeCompare(b.name)).map(p=>{ const n=norm(p.name); const sc=pScore(p);
+    return `<tr><td><span class="pn">${esc(p.name)}</span> <button class="x" type="button" aria-label="Remove ${esc(p.name)}" data-unpick="${esc(p.id)}">×</button></td>
+      <td>${hbInput(p.name,sc)}</td>
+      ${cols.map(f=>`<td>${f._norms.has(n)?`<span class="hbdot ${sc<0?'neg':''}" style="--a:${sc>0?0.35+0.65*Math.min(1,sc/Math.max(...picks.map(pScore))):0}" title="${esc(p.name)} plays ${esc(f.name)}">${esc(fmtN(sc))}</span>`:(f.lineup||[]).length?'':'<span class="muted" title="Lineup not announced yet">·</span>'}</td>`).join('')}</tr>`; }).join('');
+  $('#view').innerHTML=`<div class="panel" style="margin-bottom:16px">
+    <form class="picks-add" id="pickform">
+      <div class="field"><label class="label" for="pname">Band</label><input id="pname" list="bandlist" placeholder="Type a band name" autocomplete="off" required></div>
+      <div class="field" style="flex:0 1 130px"><label class="label" for="pscore">Headbang score</label><input id="pscore" type="number" step="any" inputmode="decimal" value="${HB_DEFAULT}" required></div>
+      <button class="btn primary" type="submit">Add band</button>
+    </form>
+    <datalist id="bandlist">${all.map(b=>`<option value="${esc(b)}">`).join('')}</datalist>
+    <p class="muted" style="margin:0;font-size:12.5px"><b>Headbang score</b>: any number you like for how much you want to see this band. Bigger means more; negative means you’d rather avoid them. Each festival’s total adds up the scores of your bands it has booked. You can add bands nobody has booked yet; they count as soon as a festival announces them.</p>
+  </div>
+  ${picks.length?`<div class="panel scroll-x"><table class="matrix hbm"><thead><tr><th>Your bands (${picks.length})</th><th>Score</th>${cols.map((f,i)=>`<th><button type="button" class="colh" data-open="${esc(f.id)}" title="${esc(f.name)} · ${esc(fmtDate(f.start,f.end))}">${i===0&&f._hb>0?'<span class="crown">#1</span>':''}${esc(shortName(f))}</button></th>`).join('')}</tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot>
+      <tr><th scope="row">Bands</th><td class="mono muted">${picks.length}</td>${cols.map(f=>`<td class="mono">${f._picked.length}<span class="muted">/${picks.length}</span></td>`).join('')}</tr>
+      <tr class="hbtot"><th scope="row">Headbang total</th><td class="mono muted">${esc(fmtN(totalHb))}</td>${cols.map((f,i)=>`<td class="mono ${i===0&&f._hb>0?'best':''}"><b>${esc(fmtN(f._hb))}</b><div class="mbar"><span style="width:${Math.max(0,Math.round(f._hb/maxHb*100))}%"></span></div></td>`).join('')}</tr>
+    </tfoot></table></div>
+    <div class="panel hblist" aria-label="Headbang totals"><div class="label" style="margin-bottom:8px">Headbang totals</div>${cols.filter(f=>f._picked.length).map((f,i)=>`<button type="button" class="hbli" data-open="${esc(f.id)}"><span class="mono muted">${i+1}</span><span>${esc(f.name)}<br><span class="sub">${f._picked.length} of ${picks.length} bands</span></span><b class="mono">${esc(fmtN(f._hb))}</b></button>`).join('')||'<span class="muted">None of your bands are booked yet.</span>'}</div>
+    <p class="note">Festivals are sorted by Headbang total, highest first. A dot (·) means that festival hasn’t announced any bands yet. Tap a festival name to open it.</p>`
+    :`<div class="state">No bands yet. Add bands here or in the All bands tab and give each a Headbang score. Each festival’s total shows up at the bottom of this table.</div>`}`;
+  $('#pickform').onsubmit=e=>{ e.preventDefault(); const name=$('#pname').value.trim(); if(!name) return; const sc=Number($('#pscore').value); if(!Number.isFinite(sc)||$('#pscore').value===''){ toast('Give the band a score'); return; }
+    const known=all.find(b=>norm(b)===norm(name)); const nm=known||name;
+    if(picks.some(p=>p.id===slug(nm))){ toast(`${nm} is already on your list`); return; }
+    setPick(nm,sc); toast(`Added ${nm}`); };
+  $('#view').querySelectorAll('[data-unpick]').forEach(b=>b.onclick=()=>{ const p=picks.find(x=>x.id===b.dataset.unpick); if(p) setPick(p.name,null); });
+  $('#view').querySelectorAll('[data-hb]').forEach(el=>el.onchange=()=>{ if(el.value===''||!Number.isFinite(Number(el.value))) return; setPick(el.dataset.hb,Number(el.value)); });
+}
+
+/* ---------- all bands ---------- */
+let bandQ='', bandFest='', bandSort='fests', bandOnly='';
+const shortName=f=>f.name.replace(/ (Open Air|Festival|Metal Meeting)$/,'').replace(/^Rock am Ring \/ Rock im Park$/,'Rock am Ring');
+function renderBands(idx){
+  const pickMap=new Map(picks.map(p=>[norm(p.name),p]));
+  let rows=[...idx.entries()].map(([k,v])=>({k,name:v.name,fests:[...v.fests].map(id=>fests.find(f=>f.id===id)).filter(Boolean)}));
+  const totalN=rows.length; const q=norm(bandQ);
+  if(q) rows=rows.filter(r=>r.k.includes(q));
+  if(bandFest) rows=rows.filter(r=>r.fests.some(f=>f.id===bandFest));
+  if(bandOnly==='excl') rows=rows.filter(r=>r.fests.length===1);
+  if(bandOnly==='mine') rows=rows.filter(r=>pickMap.has(r.k));
+  if(bandOnly==='new') rows=rows.filter(r=>r.fests.some(f=>f._newBands?.has(r.k)));
+  rows.sort(bandSort==='az'? (a,b)=>a.name.localeCompare(b.name) : (a,b)=>b.fests.length-a.fests.length||a.name.localeCompare(b.name));
+  let lastL='', html='';
+  rows.forEach(r=>{ const p=pickMap.get(r.k); const L=(r.name.normalize('NFD').replace(/[̀-ͯ]/g,'')[0]||'#').toUpperCase().replace(/[^A-Z]/,'#');
+    if(bandSort==='az'&&L!==lastL){ html+=`<div class="letter" aria-hidden="true">${L}</div>`; lastL=L; }
+    const isNew=r.fests.some(f=>f._newBands?.has(r.k));
+    html+=`<div class="brow ${p?'picked':''}"><span class="bn">${esc(r.name)}${isNew?'<span class="newtag">new</span>':''}</span>
+      <span class="fchips">${r.fests.sort((a,b)=>(a.start||'').localeCompare(b.start||'')).map(f=>`<button type="button" class="fchip" data-open="${esc(f.id)}" title="${esc(f.name)} · ${esc(fmtDate(f.start,f.end))}">${esc(shortName(f))}</button>`).join('')}</span>
+      ${p?hbInput(r.name,pScore(p)):`<button type="button" class="btn small addb" data-add="${esc(r.name)}" aria-label="Add ${esc(r.name)} with score ${HB_DEFAULT}">+ Add</button>`}</span></div>`; });
+  $('#view').innerHTML=`<div class="lineup-tools">
+      <div class="field" style="flex:2 1 220px"><label class="label" for="bq">Search bands</label><input id="bq" type="search" placeholder="Type a band name" value="${esc(bandQ)}" autocomplete="off"></div>
+      <div class="field" style="flex:1 1 160px"><label class="label" for="bf">Festival</label><select id="bf"><option value="">All festivals</option>${fests.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(f=>`<option value="${esc(f.id)}" ${bandFest===f.id?'selected':''}>${esc(f.name)}</option>`).join('')}</select></div>
+      <div class="field" style="flex:1 1 150px"><label class="label" for="bo">Show</label><select id="bo"><option value="">All bands</option><option value="excl" ${bandOnly==='excl'?'selected':''}>Only at one festival</option><option value="mine" ${bandOnly==='mine'?'selected':''}>My bands</option><option value="new" ${bandOnly==='new'?'selected':''}>Newly announced</option></select></div>
+      <div class="field" style="flex:1 1 140px"><label class="label" for="bs">Sort</label><select id="bs"><option value="fests">Most festivals first</option><option value="az" ${bandSort==='az'?'selected':''}>A–Z</option></select></div>
+    </div>
+    <p class="muted" style="margin:0 0 10px;font-size:12.5px">${rows.length} of ${totalN} announced bands · ${picks.length} in My bands. Press + Add to add a band with a Headbang score of 50, then type any number to change it. Clear the box to remove the band. Tap a festival to open it.</p>
+    <div class="bandlist">${html||'<div class="state">No bands match.</div>'}</div>`;
+  const bq=$('#bq'); bq.addEventListener('input',e=>{ bandQ=e.target.value; clearTimeout(bq.t); bq.t=setTimeout(()=>{ render(); const el=$('#bq'); el.focus(); el.setSelectionRange(el.value.length,el.value.length); },200); });
+  $('#bf').onchange=e=>{ bandFest=e.target.value; render(); };
+  $('#bo').onchange=e=>{ bandOnly=e.target.value; render(); };
+  $('#bs').onchange=e=>{ bandSort=e.target.value; render(); };
+  $('#view').querySelectorAll('[data-hb]').forEach(el=>el.onchange=()=>{ const v=el.value.trim(); const y=window.scrollY;
+    if(v===''){ setPick(el.dataset.hb,null); } else if(Number.isFinite(Number(v))) setPick(el.dataset.hb,Number(v)); window.scrollTo(0,y); });
+  $('#view').querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{ const y=window.scrollY; const name=b.dataset.add; setPick(name,HB_DEFAULT); window.scrollTo(0,y);
+    const el=[...document.querySelectorAll('[data-hb]')].find(x=>x.dataset.hb===name); if(el){ el.focus(); el.select(); } });
+}
+
+/* ---------- drawer ---------- */
+function renderDrawer(idx){
+  const root=$('#drawer-root'); const f=fests.find(x=>x.id===openId); if(!f){ root.innerHTML=''; return; }
+  const rank=fests.indexOf(f)+1; const [tc,tl]=trendOf(f);
+  const yrs=Object.keys(f.sentiment||{}).sort().reverse();
+  const comp=COMPS.map(c=>{ const off=c.k==='fit'&&!picks.length; const v=f._c[c.k];
+    return `<div class="comp"><span>${esc(c.label)}${f._est[c.k]&&!off?' <span class="est">(est.)</span>':''}</span><div class="bar"><span style="width:${off?0:v}%;background:${COMP_COLOR[c.k]}"></span></div><span class="mono">${off?'off':Math.round(v)}</span></div>`; }).join('');
+  const lineupChips=(f.lineup||[]).map((b,i)=>{ const cnt=idx.get(norm(b))?.fests.size||1; return `<span class="chip ${cnt===1?'u':''}" title="${cnt===1?'Only here so far':'At '+cnt+' festivals'}">${esc(b)}${f._newBands?.has(norm(b))?' <span class="newtag">new</span>':''}</span>`; }).join('');
+  root.innerHTML=`<div class="scrim" data-close></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="${esc(f.name)}">
+    <button class="btn small dclose" type="button" data-close>Close</button>
+    <div class="tier">${esc(f.tier)} · ranked #${rank} · score ${Math.round(f._score)}</div>
+    <h2>${esc(f.name)}</h2>
+    <div class="muted" style="margin-top:6px">${esc(f.venue||f.city)}, ${esc(f.country)} · since ${esc(f.founded)} · ${esc(f.capacity)}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center">${statusPill(f)}<span class="mono">${esc(fmtDate(f.start,f.end))}</span><span class="trend ${tc}">${tl}</span></div>
+
+    <section><h3>Score breakdown</h3>${comp}</section>
+
+    <section><h3>Tickets and price</h3><dl class="kv">
+      <dt>Status</dt><dd>${esc(f.ticket_status_note)}</dd>
+      <dt>Full pass</dt><dd class="mono">${f.price_2027!=null?'€'+f.price_2027+' (2027)':'2027 not published'}${f.price_2026!=null?' · €'+f.price_2026+' (2026)':''}</dd>
+      <dt>Ticket ease</dt><dd>${pips(f.ticket_ease||1)} <span class="muted">${esc(f.ticket_ease_notes)}</span></dd>
+      <dt>Camping</dt><dd>${esc(f.camping)}</dd>
+      <dt>Pricing notes</dt><dd class="muted">${esc(f.price_notes)}</dd>
+    </dl></section>
+
+    <section><h3>Sentiment by edition</h3>
+      ${yrs.map(y=>{const s=f.sentiment[y]; return `<div class="yr"><span class="mono">${y}</span><span class="sc s${s.score}">${s.score>0?'+':''}${s.score}</span><span>${esc(s.summary)}</span></div>`;}).join('')}
+      <p class="muted" style="margin:4px 0 0;font-size:12.5px"><b>Trend:</b> ${esc(f.trend_reason)}</p>
+      <p class="muted" style="margin:0;font-size:11.5px">Scores run from −2 (major problems) to +2 (widely praised), judged from reviews, press and fan threads about each edition.</p>
+    </section>
+
+    <section><h3>Ratings and awards</h3><ul class="plain">${(f.ratings||[]).filter(r=>r.value).map(r=>`<li><b>${esc(r.source)}</b>: ${esc(r.value)}${r.url?` · <a href="${esc(r.url)}" target="_blank" rel="noopener">source</a>`:''}</li>`).join('')||'<li class="muted">No formal rating or award found.</li>'}</ul></section>
+
+    <section><h3>2027 lineup (${(f.lineup||[]).length})</h3>
+      <div class="chips">${lineupChips||'<span class="muted">Nothing announced yet.</span>'}</div>
+      ${EDIT?`<div class="field"><label class="label" for="addb">Add bands (comma or one per line)</label><textarea id="addb" placeholder="Paste the new announcement here"></textarea></div>
+      <div><button class="btn primary small" type="button" id="addbtn">Add to lineup</button></div>`:''}
+      ${f.lineup_source?`<div class="src muted">Source: <a href="${esc(f.lineup_source)}" target="_blank" rel="noopener">${esc(f.lineup_source)}</a></div>`:''}
+    </section>
+
+    <section><h3>Recent headliners</h3><dl class="kv"><dt>2026</dt><dd>${esc((f.headliners_2026||[]).join(', '))}</dd><dt>2025</dt><dd>${esc((f.headliners_2025||[]).join(', '))}</dd></dl></section>
+
+    <section><h3>Good and bad</h3><div class="two" style="margin:0"><ul class="plain">${(f.strengths||[]).map(s=>`<li>${esc(s)}</li>`).join('')}</ul><ul class="plain">${(f.weaknesses||[]).map(s=>`<li>${esc(s)}</li>`).join('')}</ul></div></section>
+
+    ${EDIT?`<section><h3>Update facts</h3><form id="factform" class="form-grid">
+      <div class="field"><label class="label" for="e-status">Ticket status</label><select id="e-status">${Object.entries(STATUS).map(([k,v])=>`<option value="${k}" ${f.ticket_status===k?'selected':''}>${v}</option>`).join('')}</select></div>
+      <div class="field"><label class="label" for="e-ease">Ticket ease (1–5)</label><input id="e-ease" type="number" min="1" max="5" value="${esc(f.ticket_ease)}"></div>
+      <div class="field"><label class="label" for="e-metal">Metal focus (1–5)</label><input id="e-metal" type="number" min="1" max="5" value="${esc(f.metal_focus??'')}"></div>
+      <div class="field"><label class="label" for="e-scale">Scale (1–5)</label><input id="e-scale" type="number" min="1" max="5" value="${esc(f.scale??'')}"></div>
+      <div class="field"><label class="label" for="e-p27">2027 pass price (€)</label><input id="e-p27" type="number" step="0.01" value="${f.price_2027??''}"></div>
+      <div class="field"><label class="label" for="e-camp">Camping add-on (€)</label><input id="e-camp" type="number" step="0.5" value="${f.camping_addon_eur??''}"></div>
+      <div class="field"><label class="label" for="e-start">Start</label><input id="e-start" type="date" value="${esc(f.start||'')}"></div>
+      <div class="field"><label class="label" for="e-end">End</label><input id="e-end" type="date" value="${esc(f.end||'')}"></div>
+      <div class="field full"><label class="label" for="e-note">Ticket note</label><input id="e-note" value="${esc(f.ticket_status_note)}"></div>
+      <div class="full"><button class="btn primary small" type="submit">Save changes</button> <span class="muted" style="font-size:12px">Last updated ${esc(f.updated_at||'—')}</span></div>
+    </form></section>`:''}
+
+    ${(f.live_sources||[]).length?`<section><h3>Lineup checked live from</h3><ul class="plain src">${f.live_sources.map(x=>x.url).map(u=>`<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a></li>`).join('')}</ul></section>`:''}
+    <section><h3>Sources</h3><ul class="plain src">${[f.official_url,...(f.sources||[])].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).map(u=>`<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a></li>`).join('')}</ul></section>
+  </aside>`;
+  root.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{openId=null; renderDrawer(idx);});
+  root.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{ const i=+b.dataset.rm; const nl=f.lineup.filter((_,j)=>j!==i); await saveFest(f,{lineup:nl},'Removed from lineup'); });
+  const ab=$('#addbtn'); if(ab) ab.onclick=async()=>{ const raw=$('#addb').value; const have=new Set((f.lineup||[]).map(norm));
+    const add=raw.split(/[\n,;•]+/).map(s=>s.trim()).filter(Boolean).filter(s=>{const n=norm(s); if(!n||have.has(n)) return false; have.add(n); return true;});
+    if(!add.length){ toast('Nothing new to add'); return; } await saveFest(f,{lineup:[...(f.lineup||[]),...add]},`Added ${add.length} band${add.length>1?'s':''}`); };
+  const ff=$('#factform'); if(ff) ff.onsubmit=async e=>{ e.preventDefault(); const num=v=>v===''?null:Number(v);
+    await saveFest(f,{ticket_status:$('#e-status').value,ticket_ease:Math.max(1,Math.min(5,num($('#e-ease').value)||1)),metal_focus:Math.max(1,Math.min(5,num($('#e-metal').value)||3)),scale:Math.max(1,Math.min(5,num($('#e-scale').value)||3)),price_2027:num($('#e-p27').value),camping_addon_eur:num($('#e-camp').value),
+      start:$('#e-start').value||null,end:$('#e-end').value||null,ticket_status_note:$('#e-note').value},'Saved'); };
+}
+
+/* ---------- local storage (each visitor keeps their own bands and weights) ---------- */
+const LS=k=>{ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } };
+const LSset=(k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} };
+function savePicks(){ LSset('ms27-picks',picks); }
+function setPick(name,score){ const id=slug(name); const i=picks.findIndex(p=>p.id===id); if(score==null){ if(i>=0) picks.splice(i,1); } else if(i>=0) picks[i]={id,name:picks[i].name,score}; else picks.push({id,name,score}); savePicks(); render(); }
+let setT=null; function saveSettings(){ clearTimeout(setT); setT=setTimeout(()=>LSset('ms27-settings',{weights,filters,wscale:10}),300); }
+async function saveFest(){}
+/* ---------- live lineup check (runs in each visitor's browser) ----------
+   Festival sites don't allow direct cross-site reads, so pages are fetched through
+   the free Jina Reader (r.jina.ai), which returns them as text with CORS enabled.
+   Parsed sources: festivalhopper.de and festivalinfo.nl lineup listings. */
+const READER='https://r.jina.ai/', LIVE_KEY='ms27-live-v1', LIVE_EVERY_H=3;
+let baseFests=[], live={state:'idle',msg:'',done:0,total:0}, liveData=null;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function loadLive(){ liveData=LS(LIVE_KEY); if(liveData&&!liveData.results) liveData=null; }
+function parseFH(md){
+  const i=md.search(/F(ü|u)r das [\s\S]{0,200}?sind \*{0,2}\d+ Bands?/);
+  const out={bands:[],price:null,sold:false};
+  const pm=md.match(/Festivalticket ca\.\s*([\d.,]+)\s*€/); if(pm) out.price=Number(pm[1].replace(/\./g,'').replace(',','.'))||null;
+  const k=md.indexOf('Karten für'); if(k>=0 && /ausverkauft/i.test(md.slice(k,k+600))) out.sold=true;
+  if(i<0) return out;
+  const rest=md.slice(i); const e=rest.search(/weitere Bands in Vorbereitung|Fehlen Bands\?|einige dieser Bands|\n#+ /);
+  const sec=rest.slice(0,e>0?e:5000).replace(/^[\s\S]*?best(ä|a)tigt:?/,'');
+  out.bands=sec.replace(/\[([^\]]+)\]\([^)]*\)/g,'\u0001$1\u0001').replace(/\*/g,'')
+    .split(/[\u0001,\n]+/).map(x=>x.trim()).filter(x=>x&&x.length<80&&!/^(und|and|u\.a\.|\.+|…)$/i.test(x));
+  return out;
+}
+function parseFI(md){
+  const i=md.indexOf('Bevestigde artiesten'); const out={bands:[],price:null,sold:false}; if(i<0) return out;
+  const rest=md.slice(i); const e=rest.indexOf('\n## ',5); const sec=rest.slice(0,e>0?e:20000);
+  const re=/\[(?:!\[[^\]]*\]\([^)]*\)\s*)?([^\[\]]+?)\]\(https?:\/\/www\.festivalinfo\.nl\/artist\/[^)]*\)/g; let m;
+  while((m=re.exec(sec))) out.bands.push(m[1].trim());
+  return out;
+}
+async function readThrough(url){
+  const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),35000);
+  try{ const r=await fetch(READER+url,{signal:ctl.signal}); if(!r.ok) throw new Error('HTTP '+r.status); return await r.text(); } finally{ clearTimeout(t); }
+}
+function lev(a,b){ if(Math.abs(a.length-b.length)>2) return 9; const d=Array.from({length:a.length+1},(_,i)=>[i]); for(let j=1;j<=b.length;j++) d[0][j]=j;
+  for(let i=1;i<=a.length;i++) for(let j=1;j<=b.length;j++) d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1)); return d[a.length][b.length]; }
+// skip listing typos and fragments of bands already on the bill ("Shall Burn", "Foesam and Jetsam", "Chaos A.D.")
+function dupish(n,full){ return full.some(x=> (n.length>=4&&x.includes(n)) || (n.length>=6&&lev(n,x.split(' ').slice(0,n.split(' ').length+1).join(' '))<=2) || (n.length>=6&&lev(n,x)<=2)); }
+function applyLive(){
+  fests=baseFests.map(f=>structuredClone(f));
+  if(!liveData) return;
+  fests.forEach(f=>{ const L=liveData.results[f.id]; if(!L) return;
+    const have=new Set((f.lineup||[]).map(norm)); const add=[];
+    const full=(f.lineup||[]).map(x=>String(x).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,' ').trim());
+    (L.bands||[]).forEach(b=>{ const n=norm(b); if(n&&!have.has(n)&&!dupish(n,full)){ have.add(n); add.push(b); } });
+    if(add.length){ f.lineup=[...(f.lineup||[]),...add]; f._newBands=new Set(add.map(norm)); }
+    f._live=L; });
+}
+function liveLog(){ if(!liveData) return []; const d=new Date(liveData.at).toISOString().slice(0,10);
+  return fests.filter(f=>f._newBands?.size).map(f=>({date:d,festival:f.name,text:`${f._newBands.size} band${f._newBands.size>1?'s':''} announced since the last hand-checked update: ${[...f.lineup].filter(b=>f._newBands.has(norm(b))).slice(0,6).join(', ')}${f._newBands.size>6?'…':''}`,url:(f._live?.src)||null})); }
+function setLive(state,msg,done,total){ live={state,msg,done:done??live.done,total:total??live.total}; renderLive(); }
+function renderLive(){
+  const el=$('#live'); if(!el) return;
+  const last=liveData? new Date(liveData.at):null;
+  const lastTxt= last? `Lineups checked live ${last.toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}${liveData.newCount?` · ${liveData.newCount} new band${liveData.newCount>1?'s':''}`:''}.`:'Lineups not checked live yet.';
+  const btn= live.state!=='running' ? `<button class="btn small" type="button" id="checknow">Check now</button>`:'';
+  const bar= live.state==='running'&&live.total? `<div class="lbar"><span style="width:${Math.round(live.done/live.total*100)}%"></span></div>`:'';
+  el.className='live '+live.state;
+  el.innerHTML=`<span class="dotl"></span><span>${esc(live.msg||lastTxt)}</span>${bar}${btn}`;
+  const b=$('#checknow'); if(b) b.onclick=()=>liveCheck(true);
+}
+async function liveCheck(manual){
+  if(live.state==='running'||!baseFests.length) return;
+  const jobs=[]; baseFests.forEach(f=>(f.live_sources||[]).forEach(s=>jobs.push({f,s})));
+  if(!jobs.length) return;
+  const results={}; let ok=0, fail=0, done=0;
+  setLive('running','Checking festival lineups…',0,jobs.length);
+  const worker=async()=>{ while(jobs.length){ const j=jobs.shift();
+      setLive('running',`Checking ${j.f.name}…`,done,done+jobs.length+1);
+      try{ const md=await readThrough(j.s.url); const p=j.s.type==='festivalinfo'?parseFI(md):parseFH(md);
+        const R=results[j.f.id]||(results[j.f.id]={bands:[],price:null,sold:false,src:j.s.url});
+        R.bands.push(...p.bands); if(p.price!=null&&R.price==null) R.price=p.price; if(p.sold) R.sold=true; ok++; }
+      catch(e){ fail++; }
+      done++; await sleep(2500); } };
+  const total=jobs.length; live.total=total;
+  await Promise.all([worker(),worker()]);
+  if(!ok){ setLive('warn',`Could not reach the festival listings right now${manual?'':' (showing saved data)'}. Try Check now later.`); return; }
+  liveData={at:Date.now(),results}; applyLive();
+  liveData.newCount=fests.reduce((a,f)=>a+(f._newBands?.size||0),0); LSset(LIVE_KEY,liveData);
+  render(); setLive('ok',`Lineups checked just now: ${liveData.newCount?`${liveData.newCount} band${liveData.newCount>1?'s':''} newer than the saved data (marked “new”)`:'nothing newer than the saved data'}${fail?` · ${fail} source${fail>1?'s':''} unreachable`:''}.`);
+}
+/* ---------- render ---------- */
+let lastIdx=new Map();
+function renderLeader(){
+  const top=visible()[0]||fests[0]; if(!top) return; const best=top._parts.slice().sort((a,b)=>b.v-a.v).slice(0,2).map(p=>COMPS.find(c=>c.k===p.k).label.toLowerCase());
+  $('#leader').innerHTML=`<div class="label">Top pick right now</div><div class="who">${esc(top.name)}</div><div class="why">Score ${Math.round(top._score)} · strongest on ${esc(best.join(' and '))}</div>`;
+}
+function view(){ const h=location.hash.replace('#',''); return ['ranking','lineups','bands','calendar','my-bands'].includes(h)?h:'ranking'; }
+function render(){
+  document.querySelectorAll('nav.tabs a').forEach(a=>a.setAttribute('aria-current',a.dataset.v===view()?'page':'false'));
+  if(!fests.length){
+    $('#view').innerHTML=`<div class="state">${dbState==='loading'?'Loading festival data…':dbState==='error'?'Could not load festivals.json. If you opened index.html straight from disk, serve the folder instead (GitHub Pages, or “python -m http.server”).':'No festivals in festivals.json yet.'}</div>`;
+    $('#leader').innerHTML=''; return;
+  }
+  const idx=analyse(); lastIdx=idx;
+  renderLeader();
+  const last=fests.map(f=>f.updated_at||'').sort().slice(-1)[0];
+  $('#subline').textContent=`${fests.length} major European metal festivals, scored on what matters to you. Data last updated ${last}.`;
+  const v=view();
+  if(v==='ranking') renderRanking(); else if(v==='lineups') renderLineups(idx); else if(v==='bands') renderBands(idx); else if(v==='calendar') renderCalendar(); else renderPicks(idx);
+  $('#view').querySelectorAll('[data-open]:not(.row)').forEach(b=>b.addEventListener('click',()=>{ openId=b.dataset.open; renderDrawer(idx); }));
+  renderDrawer(idx);
+}
+window.addEventListener('hashchange',()=>{ render(); window.scrollTo(0,0); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&openId){ openId=null; $('#drawer-root').innerHTML=''; } });
+render();
+
+/* ---------- data ---------- */
+(async()=>{
+  const st=LS('ms27-settings'); if(st?.weights) weights={...weights,...st.weights}; if(st?.filters) filters={...filters,...st.filters};
+  picks=(LS('ms27-picks')||[]).filter(p=>p&&p.name&&Number.isFinite(Number(p.score))).map(p=>({id:p.id||slug(p.name),name:p.name,score:Number(p.score)}));
+  try{
+    const [fr,mr]=await Promise.all([fetch('festivals.json',{cache:'no-cache'}),fetch('meta.json',{cache:'no-cache'}).catch(()=>null)]);
+    baseFests=await fr.json(); sync=mr&&mr.ok?await mr.json():null;
+  }catch(e){ dbState='error'; render(); return; }
+  dbState='ready'; loadLive(); applyLive(); render(); renderLive();
+  if(!liveData || Date.now()-liveData.at > LIVE_EVERY_H*3600e3) setTimeout(()=>liveCheck(false),800);
+})();
+})();
+</script>
+</body>
+</html>

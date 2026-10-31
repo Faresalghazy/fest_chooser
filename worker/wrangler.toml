@@ -1,0 +1,9 @@
+name = "metal-summer-sync"
+main = "sync-worker.js"
+compatibility_date = "2024-09-01"
+
+# Create the namespace with:  npx wrangler kv namespace create SYNC
+# then paste the id it prints below.
+[[kv_namespaces]]
+binding = "SYNC"
+id = "PASTE_KV_NAMESPACE_ID_HERE"

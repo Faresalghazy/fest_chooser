@@ -247,18 +247,34 @@ table.hbm td:first-child .pn{font-weight:500}
 .hbli{display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:center;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:8px 0;cursor:pointer;color:var(--ink)}
 .hbli b{font-size:18px;color:var(--accent)}
 @media (max-width:640px){.hblist{display:block}}
-.hbcards{display:none;flex-direction:column;gap:8px}
-.hbcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;gap:8px}
-.hbcard-top{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center}
-.hbcard-top .pn{overflow-wrap:anywhere}
+.m-sc{display:none}
+table.hbm .colh{writing-mode:vertical-rl;transform:rotate(180deg);max-height:130px;overflow:hidden;text-overflow:ellipsis;text-align:left}
+table.hbm thead th:not(:first-child){vertical-align:bottom;text-align:center}
+@media (max-width:640px){table.hbm .colh{font-size:11px;max-height:120px}}
+table.hbm .x{margin-left:2px}
 @media (max-width:640px){
-  .hbm-wrap{display:none}
-  .hbcards{display:flex}
-  .hblist{margin:0 0 16px}
+  .hbm-wrap{padding:8px}
+  table.hbm{font-size:12px}
+  table.hbm th,table.hbm td{padding:5px 4px}
+  table.hbm .c-sc{display:none}
+  table.hbm .m-sc{display:block;margin-top:4px}
+  table.hbm .m-sc .hbin{width:64px;font-size:12px;padding:3px 5px}
+  table.hbm td:first-child,table.hbm th:first-child{max-width:118px;white-space:normal;overflow-wrap:anywhere}
+  table.hbm thead th:not(:first-child){vertical-align:bottom}
+  table.hbm .crown{font-size:9px}
+  .hbdot{min-width:20px;height:20px;font-size:10px;padding:0 3px}
+  .hbtot td b{font-size:13px}
+  table.hbm .mbar,table.hbm .of{display:none}
   .picks-add .field{flex:1 1 100%}
   .picks-add .btn{width:100%}
   .syncrow .hbin{flex:1 1 120px}
 }
+.navbtn{padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-weight:500;cursor:pointer;margin-left:auto}
+.navbtn:hover{border-color:var(--accent);color:var(--accent)}
+@media (max-width:640px){.navbtn{margin-left:0}}
+.modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(520px,calc(100% - 32px));max-height:calc(100% - 48px);overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:10px;z-index:22;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.modal-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.modal h2{font-family:var(--display);font-size:30px;font-weight:600;line-height:1}
 .syncrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .synccode{font-size:16px;letter-spacing:.08em;color:var(--accent)}
 .syncnote{margin:6px 0 0;font-size:12px}
@@ -284,11 +300,13 @@ table.hbm td:first-child .pn{font-weight:500}
     <a href="#bands" data-v="bands">All bands</a>
     <a href="#calendar" data-v="calendar">Calendar</a>
     <a href="#my-bands" data-v="my-bands">My bands</a>
+    <button type="button" class="navbtn" id="open-sync">Sync with other device</button>
   </nav>
   <div id="live" class="live" aria-live="polite"></div>
   <main id="view"><div class="state">Loading festival data&#x2026;</div></main>
 </div>
 <div id="drawer-root"></div>
+<div id="modal-root"></div>
 <div id="toast-root"></div>
 
 <script>
@@ -488,13 +506,14 @@ function renderCalendar(){
 
 function renderPicks(idx){
   const all=[...idx.values()].map(v=>v.name).sort((a,b)=>a.localeCompare(b));
-  const cols=fests.slice().sort((a,b)=>(b._hb-a._hb)||(b._picked.length-a._picked.length)||(b._score-a._score));
+  const cols=fests.filter(f=>f._picked.length).sort((a,b)=>(b._hb-a._hb)||(b._picked.length-a._picked.length)||(b._score-a._score));
+  const hidden=fests.length-cols.length;
   const maxHb=Math.max(1e-9,...cols.map(f=>Math.abs(f._hb))); const totalHb=picks.reduce((a,p)=>a+pScore(p),0);
   const rows=picks.slice().sort((a,b)=>(pScore(b)-pScore(a))||a.name.localeCompare(b.name)).map(p=>{ const n=norm(p.name); const sc=pScore(p);
-    return `<tr><td><span class="pn">${esc(p.name)}</span> <button class="x" type="button" aria-label="Remove ${esc(p.name)}" data-unpick="${esc(p.id)}">\u00d7</button></td>
-      <td>${hbInput(p.name,sc)}</td>
-      ${cols.map(f=>`<td>${f._norms.has(n)?`<span class="hbdot ${sc<0?'neg':''}" style="--a:${sc>0?0.35+0.65*Math.min(1,sc/Math.max(...picks.map(pScore))):0}" title="${esc(p.name)} plays ${esc(f.name)}">${esc(fmtN(sc))}</span>`:(f.lineup||[]).length?'':'<span class="muted" title="Lineup not announced yet">\u00b7</span>'}</td>`).join('')}</tr>`; }).join('');
-  $('#view').innerHTML=`<div class="panel" id="syncbox" style="margin-bottom:16px"></div><div class="panel" style="margin-bottom:16px">
+    return `<tr><td><span class="pn">${esc(p.name)}</span><button class="x" type="button" aria-label="Remove ${esc(p.name)}" data-unpick="${esc(p.id)}">\u00d7</button><span class="m-sc">${hbInput(p.name,sc)}</span></td>
+      <td class="c-sc">${hbInput(p.name,sc)}</td>
+      ${cols.map(f=>`<td>${f._norms.has(n)?`<span class="hbdot ${sc<0?'neg':''}" style="--a:${sc>0?0.35+0.65*Math.min(1,sc/Math.max(...picks.map(pScore))):0}" title="${esc(p.name)} plays ${esc(f.name)}">${esc(fmtN(sc))}</span>`:''}</td>`).join('')}</tr>`; }).join('');
+  $('#view').innerHTML=`<div class="panel" style="margin-bottom:16px">
     <form class="picks-add" id="pickform">
       <div class="field"><label class="label" for="pname">Band</label><input id="pname" list="bandlist" placeholder="Type a band name" autocomplete="off" required></div>
       <div class="field" style="flex:0 1 130px"><label class="label" for="pscore">Headbang score</label><input id="pscore" type="number" step="any" inputmode="decimal" value="${HB_DEFAULT}" required></div>
@@ -503,17 +522,13 @@ function renderPicks(idx){
     <datalist id="bandlist">${all.map(b=>`<option value="${esc(b)}">`).join('')}</datalist>
     <p class="muted" style="margin:0;font-size:12.5px"><b>Headbang score</b>: any number you like for how much you want to see this band. Bigger means more; negative means you\u2019d rather avoid them. Each festival\u2019s total adds up the scores of your bands it has booked. You can add bands nobody has booked yet; they count as soon as a festival announces them.</p>
   </div>
-  ${picks.length?`<div class="panel hblist" aria-label="Headbang totals"><div class="label" style="margin-bottom:8px">Headbang totals</div>${cols.filter(f=>f._picked.length).map((f,i)=>`<button type="button" class="hbli" data-open="${esc(f.id)}"><span class="mono muted">${i+1}</span><span>${esc(f.name)}<br><span class="sub">${f._picked.length} of ${picks.length} bands</span></span><b class="mono">${esc(fmtN(f._hb))}</b></button>`).join('')||'<span class="muted">None of your bands are booked yet.</span>'}</div>
-    <div class="panel scroll-x hbm-wrap"><table class="matrix hbm"><thead><tr><th>Your bands (${picks.length})</th><th>Score</th>${cols.map((f,i)=>`<th><button type="button" class="colh" data-open="${esc(f.id)}" title="${esc(f.name)} \u00b7 ${esc(fmtDate(f.start,f.end))}">${i===0&&f._hb>0?'<span class="crown">#1</span>':''}${esc(shortName(f))}</button></th>`).join('')}</tr></thead>
+  ${picks.length?`<div class="panel scroll-x hbm-wrap"><table class="matrix hbm"><thead><tr><th>Your bands (${picks.length})</th><th class="c-sc">Score</th>${cols.map((f,i)=>`<th>${i===0&&f._hb>0?'<span class="crown">#1</span>':''}<button type="button" class="colh" data-open="${esc(f.id)}" title="${esc(f.name)} \u00b7 ${esc(fmtDate(f.start,f.end))}">${esc(shortName(f))}</button></th>`).join('')}</tr></thead>
     <tbody>${rows}</tbody>
-    <tfoot>
-      <tr><th scope="row">Bands</th><td class="mono muted">${picks.length}</td>${cols.map(f=>`<td class="mono">${f._picked.length}<span class="muted">/${picks.length}</span></td>`).join('')}</tr>
-      <tr class="hbtot"><th scope="row">Headbang total</th><td class="mono muted">${esc(fmtN(totalHb))}</td>${cols.map((f,i)=>`<td class="mono ${i===0&&f._hb>0?'best':''}"><b>${esc(fmtN(f._hb))}</b><div class="mbar"><span style="width:${Math.max(0,Math.round(f._hb/maxHb*100))}%"></span></div></td>`).join('')}</tr>
-    </tfoot></table></div>
-    <div class="hbcards" aria-label="Your bands">${picks.slice().sort((a,b)=>(pScore(b)-pScore(a))||a.name.localeCompare(b.name)).map(p=>{ const n=norm(p.name); const at=fests.filter(f=>f._norms.has(n));
-      return `<div class="hbcard"><div class="hbcard-top"><b class="pn">${esc(p.name)}</b>${hbInput(p.name,pScore(p))}<button class="x" type="button" aria-label="Remove ${esc(p.name)}" data-unpick="${esc(p.id)}">\u00d7</button></div>
-        <div class="fchips">${at.length?at.sort((a,b)=>(a.start||'').localeCompare(b.start||'')).map(f=>`<button type="button" class="fchip" data-open="${esc(f.id)}">${esc(shortName(f))}</button>`).join(''):'<span class="muted" style="font-size:12px">Not booked anywhere yet</span>'}</div></div>`; }).join('')}</div>
-    <p class="note">Festivals are sorted by Headbang total, highest first. A dot (\u00b7) means that festival hasn\u2019t announced any bands yet. Tap a festival name to open it.</p>`
+    ${cols.length?`<tfoot>
+      <tr><th scope="row">Bands</th><td class="mono muted c-sc">${picks.length}</td>${cols.map(f=>`<td class="mono">${f._picked.length}<span class="muted of">/${picks.length}</span></td>`).join('')}</tr>
+      <tr class="hbtot"><th scope="row">Headbang total</th><td class="mono muted c-sc">${esc(fmtN(totalHb))}</td>${cols.map((f,i)=>`<td class="mono ${i===0&&f._hb>0?'best':''}"><b>${esc(fmtN(f._hb))}</b><div class="mbar"><span style="width:${Math.max(0,Math.round(f._hb/maxHb*100))}%"></span></div></td>`).join('')}</tr>
+    </tfoot>`:''}</table></div>
+    <p class="note">${cols.length?`Festivals are sorted by Headbang total, highest first.${hidden?` ${hidden} festival${hidden>1?'s':''} with none of your bands ${hidden>1?'are':'is'} hidden.`:''} Tap a festival name to open it.`:'None of your bands are booked at any festival here yet. Festivals show up in this table as soon as they book one.'}</p>`
     :`<div class="state">No bands yet. Add bands here or in the All bands tab and give each a Headbang score. Each festival\u2019s total shows up at the bottom of this table.</div>`}`;
   $('#pickform').onsubmit=e=>{ e.preventDefault(); const name=$('#pname').value.trim(); if(!name) return; const sc=Number($('#pscore').value); if(!Number.isFinite(sc)||$('#pscore').value===''){ toast('Give the band a score'); return; }
     const known=all.find(b=>norm(b)===norm(name)); const nm=known||name;
@@ -521,7 +536,6 @@ function renderPicks(idx){
     setPick(nm,sc); toast(`Added ${nm}`); };
   $('#view').querySelectorAll('[data-unpick]').forEach(b=>b.onclick=()=>{ const p=picks.find(x=>x.id===b.dataset.unpick); if(p) setPick(p.name,null); });
   $('#view').querySelectorAll('[data-hb]').forEach(el=>el.onchange=()=>{ if(el.value===''||!Number.isFinite(Number(el.value))) return; setPick(el.dataset.hb,Number(el.value)); });
-  renderSyncBox();
 }
 
 /* ---------- all bands ---------- */
@@ -645,6 +659,13 @@ async function saveFest(){}
    and downloads them once; the worker then deletes them (and unused codes expire after an hour).
    Without a syncUrl, a longer transfer code carries the data itself. */
 let SYNC_URL='', sentCode='', syncMsg='';
+function openSync(){ sentCode=''; syncMsg='';
+  $('#modal-root').innerHTML=`<div class="scrim" data-mclose></div><div class="modal" role="dialog" aria-modal="true" aria-labelledby="sync-title">
+    <div class="modal-head"><h2 id="sync-title">Sync with other device</h2><button class="btn small" type="button" data-mclose>Close</button></div>
+    <div id="syncbox"></div></div>`;
+  $('#modal-root').querySelectorAll('[data-mclose]').forEach(b=>b.onclick=closeSync);
+  renderSyncBox(); const f=$('#sy-new')||$('#sy-export'); if(f) f.focus(); }
+function closeSync(){ $('#modal-root').innerHTML=''; }
 const stamp=()=>LS('ms27-stamp')||0;
 const payload=()=>({v:1,updated:stamp(),picks,weights,filters});
 const fmtCode=c=>c?c.slice(0,4)+'-'+c.slice(4):'';
@@ -667,7 +688,7 @@ async function sendSetup(){ try{ const r=await fetch(SYNC_URL+'/new',{method:'PO
     const j=await r.json(); if(!j.code) throw 0; sentCode=j.code; syncMsg=''; renderSyncBox(); }
   catch(e){ toast('Could not reach the transfer server'); } }
 function renderSyncBox(){ const el=$('#syncbox'); if(!el) return;
-  let h='<div class="label" style="margin-bottom:6px">Move your setup to another browser</div>';
+  let h='';
   if(SYNC_URL) h+=`<div class="syncrow">${sentCode?`<span>Your code</span><b class="mono synccode">${esc(fmtCode(sentCode))}</b><button class="btn small" type="button" id="sy-copy">Copy</button>`:`<button class="btn small primary" type="button" id="sy-new">Send my setup</button>`}
     <span class="muted">or</span><input id="sy-code" class="hbin" style="width:120px;text-align:left" placeholder="ABCD-EFGH" autocomplete="off"><button class="btn small" type="button" id="sy-join">Receive</button></div>
     <p class="muted syncnote">${sentCode?'Enter this code on the other browser within an hour. It works once, then it is deleted.':'Sends your bands and sliders once, as a short code you type on your phone or another browser. Receiving replaces that browser\u2019s bands.'}${syncMsg?' <b>'+esc(syncMsg)+'</b>':''}</p>`;
@@ -784,7 +805,8 @@ function render(){
   renderDrawer(idx);
 }
 window.addEventListener('hashchange',()=>{ render(); window.scrollTo(0,0); });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&openId){ openId=null; $('#drawer-root').innerHTML=''; } });
+document.addEventListener('keydown',e=>{ if(e.key!=='Escape') return; if($('#modal-root').innerHTML){ closeSync(); return; } if(openId){ openId=null; $('#drawer-root').innerHTML=''; } });
+$('#open-sync').onclick=openSync;
 render();
 
 /* ---------- data ---------- */

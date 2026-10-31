@@ -9,7 +9,7 @@ A one-page site that compares the big European metal festivals of 2027 and helps
 - **My bands**: your bands with their Headbang scores, plus each festival's band count and Headbang total.
 
 Your bands and slider settings are stored in your own browser, so every friend gets their own.
-To use the same setup on another browser or your phone, use **Sync with your other browsers** at the top of the My bands tab.
+To use the same setup on another browser or your phone, use **Move your setup to another browser** at the top of the My bands tab.
 
 ## Live lineup updates
 
@@ -25,21 +25,15 @@ updated by hand when they announce.
 Ticket status, prices, sentiment and ratings are hand-checked data in `festivals.json` (last update: see `meta.json`).
 Edit those files and push to update everyone.
 
-## Sync between browsers
+## Moving your setup to another browser
 
-Without any setup, **Copy transfer code** in the My bands tab copies your bands and sliders to another browser once.
+In the My bands tab, **Send my setup** uploads your bands and sliders once and shows a short code (like `ABCD-EFGH`).
+Type it on your phone or another browser and press **Receive**. Nothing stays in sync afterwards: the server deletes the
+data as soon as the code is used, and unused codes expire after an hour.
 
-For live sync with a short code (like `ABCD-EFGH`), deploy the free Cloudflare Worker in `worker/` once:
-
-1. In the Cloudflare dashboard, open **Storage & Databases -> KV** and create a namespace called `metal-summer-sync`.
-2. Open **Workers & Pages -> Create -> Create Worker**, name it `metal-summer-sync`, deploy, then **Edit code**:
-   replace everything with `worker/sync-worker.js` and deploy again.
-3. In the worker's **Settings -> Bindings**, add a **KV namespace** binding with variable name `SYNC` pointing to the
-   namespace from step 1.
-4. Put the worker's address in `config.json`, for example `{ "syncUrl": "https://metal-summer-sync.<you>.workers.dev" }`, and push.
-
-The free plan allows 100,000 reads and 1,000 writes a day, far more than a group of friends needs. Codes are random,
-8 characters long, and only store band names, scores and slider settings.
+This uses the free Cloudflare Worker in `worker/` (one KV namespace bound as `SYNC`), whose address is in `config.json`.
+On Cloudflare's Free plan, going over the daily limits only pauses transfers until the next day; nothing is ever billed.
+If `config.json` has no `syncUrl`, the page falls back to a longer copy-and-paste transfer code.
 
 ## Publish on GitHub Pages
 

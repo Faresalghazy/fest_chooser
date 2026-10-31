@@ -247,6 +247,18 @@ table.hbm td:first-child .pn{font-weight:500}
 .hbli{display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:center;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:8px 0;cursor:pointer;color:var(--ink)}
 .hbli b{font-size:18px;color:var(--accent)}
 @media (max-width:640px){.hblist{display:block}}
+.hbcards{display:none;flex-direction:column;gap:8px}
+.hbcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.hbcard-top{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center}
+.hbcard-top .pn{overflow-wrap:anywhere}
+@media (max-width:640px){
+  .hbm-wrap{display:none}
+  .hbcards{display:flex}
+  .hblist{margin:0 0 16px}
+  .picks-add .field{flex:1 1 100%}
+  .picks-add .btn{width:100%}
+  .syncrow .hbin{flex:1 1 120px}
+}
 .syncrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .synccode{font-size:16px;letter-spacing:.08em;color:var(--accent)}
 .syncnote{margin:6px 0 0;font-size:12px}
@@ -491,13 +503,16 @@ function renderPicks(idx){
     <datalist id="bandlist">${all.map(b=>`<option value="${esc(b)}">`).join('')}</datalist>
     <p class="muted" style="margin:0;font-size:12.5px"><b>Headbang score</b>: any number you like for how much you want to see this band. Bigger means more; negative means you\u2019d rather avoid them. Each festival\u2019s total adds up the scores of your bands it has booked. You can add bands nobody has booked yet; they count as soon as a festival announces them.</p>
   </div>
-  ${picks.length?`<div class="panel scroll-x"><table class="matrix hbm"><thead><tr><th>Your bands (${picks.length})</th><th>Score</th>${cols.map((f,i)=>`<th><button type="button" class="colh" data-open="${esc(f.id)}" title="${esc(f.name)} \u00b7 ${esc(fmtDate(f.start,f.end))}">${i===0&&f._hb>0?'<span class="crown">#1</span>':''}${esc(shortName(f))}</button></th>`).join('')}</tr></thead>
+  ${picks.length?`<div class="panel hblist" aria-label="Headbang totals"><div class="label" style="margin-bottom:8px">Headbang totals</div>${cols.filter(f=>f._picked.length).map((f,i)=>`<button type="button" class="hbli" data-open="${esc(f.id)}"><span class="mono muted">${i+1}</span><span>${esc(f.name)}<br><span class="sub">${f._picked.length} of ${picks.length} bands</span></span><b class="mono">${esc(fmtN(f._hb))}</b></button>`).join('')||'<span class="muted">None of your bands are booked yet.</span>'}</div>
+    <div class="panel scroll-x hbm-wrap"><table class="matrix hbm"><thead><tr><th>Your bands (${picks.length})</th><th>Score</th>${cols.map((f,i)=>`<th><button type="button" class="colh" data-open="${esc(f.id)}" title="${esc(f.name)} \u00b7 ${esc(fmtDate(f.start,f.end))}">${i===0&&f._hb>0?'<span class="crown">#1</span>':''}${esc(shortName(f))}</button></th>`).join('')}</tr></thead>
     <tbody>${rows}</tbody>
     <tfoot>
       <tr><th scope="row">Bands</th><td class="mono muted">${picks.length}</td>${cols.map(f=>`<td class="mono">${f._picked.length}<span class="muted">/${picks.length}</span></td>`).join('')}</tr>
       <tr class="hbtot"><th scope="row">Headbang total</th><td class="mono muted">${esc(fmtN(totalHb))}</td>${cols.map((f,i)=>`<td class="mono ${i===0&&f._hb>0?'best':''}"><b>${esc(fmtN(f._hb))}</b><div class="mbar"><span style="width:${Math.max(0,Math.round(f._hb/maxHb*100))}%"></span></div></td>`).join('')}</tr>
     </tfoot></table></div>
-    <div class="panel hblist" aria-label="Headbang totals"><div class="label" style="margin-bottom:8px">Headbang totals</div>${cols.filter(f=>f._picked.length).map((f,i)=>`<button type="button" class="hbli" data-open="${esc(f.id)}"><span class="mono muted">${i+1}</span><span>${esc(f.name)}<br><span class="sub">${f._picked.length} of ${picks.length} bands</span></span><b class="mono">${esc(fmtN(f._hb))}</b></button>`).join('')||'<span class="muted">None of your bands are booked yet.</span>'}</div>
+    <div class="hbcards" aria-label="Your bands">${picks.slice().sort((a,b)=>(pScore(b)-pScore(a))||a.name.localeCompare(b.name)).map(p=>{ const n=norm(p.name); const at=fests.filter(f=>f._norms.has(n));
+      return `<div class="hbcard"><div class="hbcard-top"><b class="pn">${esc(p.name)}</b>${hbInput(p.name,pScore(p))}<button class="x" type="button" aria-label="Remove ${esc(p.name)}" data-unpick="${esc(p.id)}">\u00d7</button></div>
+        <div class="fchips">${at.length?at.sort((a,b)=>(a.start||'').localeCompare(b.start||'')).map(f=>`<button type="button" class="fchip" data-open="${esc(f.id)}">${esc(shortName(f))}</button>`).join(''):'<span class="muted" style="font-size:12px">Not booked anywhere yet</span>'}</div></div>`; }).join('')}</div>
     <p class="note">Festivals are sorted by Headbang total, highest first. A dot (\u00b7) means that festival hasn\u2019t announced any bands yet. Tap a festival name to open it.</p>`
     :`<div class="state">No bands yet. Add bands here or in the All bands tab and give each a Headbang score. Each festival\u2019s total shows up at the bottom of this table.</div>`}`;
   $('#pickform').onsubmit=e=>{ e.preventDefault(); const name=$('#pname').value.trim(); if(!name) return; const sc=Number($('#pscore').value); if(!Number.isFinite(sc)||$('#pscore').value===''){ toast('Give the band a score'); return; }
@@ -624,57 +639,48 @@ function savePicks(){ LSset('ms27-picks',picks); touched(); }
 function setPick(name,score){ const id=slug(name); const i=picks.findIndex(p=>p.id===id); if(score==null){ if(i>=0) picks.splice(i,1); } else if(i>=0) picks[i]={id,name:picks[i].name,score}; else picks.push({id,name,score}); savePicks(); render(); }
 let setT=null; function saveSettings(){ clearTimeout(setT); setT=setTimeout(()=>{ LSset('ms27-settings',{weights,filters,wscale:10}); touched(); },300); }
 async function saveFest(){}
-/* ---------- sync across browsers ----------
-   With "syncUrl" set in config.json (a free Cloudflare Worker, see worker/), a short code keeps
-   bands, weights and filters in step on every browser that uses it. Without it, a one-off
-   transfer code copies them from one browser to another. */
-let SYNC_URL='', syncCode=LS('ms27-sync-code'), syncMsg='', syncT=null;
+/* ---------- move your setup to another browser ----------
+   With "syncUrl" set in config.json (a free Cloudflare Worker, see worker/), "Send my setup" uploads
+   your bands, weights and filters once and returns a short code. The other browser enters the code
+   and downloads them once; the worker then deletes them (and unused codes expire after an hour).
+   Without a syncUrl, a longer transfer code carries the data itself. */
+let SYNC_URL='', sentCode='', syncMsg='';
 const stamp=()=>LS('ms27-stamp')||0;
 const payload=()=>({v:1,updated:stamp(),picks,weights,filters});
 const fmtCode=c=>c?c.slice(0,4)+'-'+c.slice(4):'';
 function applyPayload(p){ if(!p||!Array.isArray(p.picks)) return false;
   picks=p.picks.filter(x=>x&&x.name&&Number.isFinite(Number(x.score))).map(x=>({id:x.id||slug(x.name),name:String(x.name),score:Number(x.score)}));
   if(p.weights) weights={...weights,...p.weights}; if(p.filters) filters={...filters,...p.filters};
-  LSset('ms27-picks',picks); LSset('ms27-settings',{weights,filters,wscale:10}); LSset('ms27-stamp',p.updated||Date.now()); return true; }
-function touched(){ LSset('ms27-stamp',Date.now()); if(syncCode&&SYNC_URL){ clearTimeout(syncT); syncT=setTimeout(pushSync,3000); } }
-async function pushSync(){ try{ const r=await fetch(SYNC_URL+'/c/'+syncCode,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload())});
-    syncMsg=r.ok?'Saved':r.status===404?'This sync code no longer exists':'Could not save ('+r.status+')'; }catch(e){ syncMsg='Offline: changes will sync later'; } renderSyncBox(); }
-async function pullSync(){ if(!syncCode||!SYNC_URL) return;
-  try{ const r=await fetch(SYNC_URL+'/c/'+syncCode,{cache:'no-store'}); if(r.status===404){ syncMsg='This sync code no longer exists'; renderSyncBox(); return; }
-    const p=await r.json(); if((p.updated||0)>stamp()){ applyPayload(p); syncMsg='Updated from your other browsers'; render(); }
-    else if((p.updated||0)<stamp()) await pushSync(); else syncMsg='In sync'; }
-  catch(e){ syncMsg='Offline: showing this browser\u2019s copy'; } renderSyncBox(); }
+  LSset('ms27-picks',picks); LSset('ms27-settings',{weights,filters,wscale:10}); LSset('ms27-stamp',Date.now()); return true; }
+function touched(){ LSset('ms27-stamp',Date.now()); }
 const b64e=o=>btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(o))));
 const b64d=t=>JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(t),c=>c.charCodeAt(0))));
 async function copyText(t,el){ try{ await navigator.clipboard.writeText(t); toast('Copied'); }catch(e){ if(el){ el.focus(); el.select(); } toast('Select the code and copy it'); } }
-async function joinCode(raw){ const t=String(raw||'').trim(); if(!t) return;
-  if(t.startsWith('MS1.')){ try{ if(applyPayload(b64d(t.slice(4)))){ toast('Loaded '+picks.length+' bands from the code'); render(); } }catch(e){ toast('That code looks incomplete. Copy it again.'); } return; }
+async function receiveCode(raw){ const t=String(raw||'').trim(); if(!t) return;
+  if(t.startsWith('MS1.')){ try{ if(applyPayload(b64d(t.slice(4)))){ syncMsg='Loaded '+picks.length+' bands.'; render(); } }catch(e){ toast('That code looks incomplete. Copy it again.'); } return; }
   const c=t.toUpperCase().replace(/[^A-Z2-9]/g,''); if(c.length!==8||!SYNC_URL){ toast('Codes look like ABCD-EFGH'); return; }
-  try{ const r=await fetch(SYNC_URL+'/c/'+c,{cache:'no-store'}); if(!r.ok){ toast('No sync found for '+fmtCode(c)); return; }
-    syncCode=c; LSset('ms27-sync-code',c); applyPayload(await r.json()); syncMsg='Joined: this browser now uses the synced bands'; render(); }
-  catch(e){ toast('Could not reach the sync server'); } }
-async function createCode(){ try{ LSset('ms27-stamp',stamp()||Date.now()); const r=await fetch(SYNC_URL+'/new',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload())});
-    const j=await r.json(); if(!j.code) throw 0; syncCode=j.code; LSset('ms27-sync-code',syncCode); syncMsg='Sync code created'; renderSyncBox(); }
-  catch(e){ toast('Could not reach the sync server'); } }
+  try{ const r=await fetch(SYNC_URL+'/c/'+c,{cache:'no-store'});
+    if(!r.ok){ toast('Code '+fmtCode(c)+' was already used or has expired'); return; }
+    if(applyPayload(await r.json())){ syncMsg='Loaded '+picks.length+' bands from '+fmtCode(c)+'.'; render(); } }
+  catch(e){ toast('Could not reach the transfer server'); } }
+async function sendSetup(){ try{ const r=await fetch(SYNC_URL+'/new',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload())});
+    const j=await r.json(); if(!j.code) throw 0; sentCode=j.code; syncMsg=''; renderSyncBox(); }
+  catch(e){ toast('Could not reach the transfer server'); } }
 function renderSyncBox(){ const el=$('#syncbox'); if(!el) return;
-  let h='<div class="label" style="margin-bottom:6px">Sync with your other browsers</div>';
-  if(SYNC_URL&&syncCode) h+=`<div class="syncrow"><span>Synced with code</span><b class="mono synccode">${esc(fmtCode(syncCode))}</b><button class="btn small" type="button" id="sy-copy">Copy</button><button class="btn small" type="button" id="sy-stop">Stop syncing here</button></div>
-    <p class="muted syncnote">Enter this code in the My bands tab on your phone or another browser. Changes sync both ways.${syncMsg?' <b>'+esc(syncMsg)+'</b>':''}</p>`;
-  else if(SYNC_URL) h+=`<div class="syncrow"><button class="btn small primary" type="button" id="sy-new">Create sync code</button><span class="muted">or</span><input id="sy-code" class="hbin" style="width:120px;text-align:left" placeholder="ABCD-EFGH" autocomplete="off"><button class="btn small" type="button" id="sy-join">Use code</button></div>
-    <p class="muted syncnote">A code keeps your bands and sliders the same on every browser that uses it. Using a code replaces this browser\u2019s bands with the synced ones.</p>`;
+  let h='<div class="label" style="margin-bottom:6px">Move your setup to another browser</div>';
+  if(SYNC_URL) h+=`<div class="syncrow">${sentCode?`<span>Your code</span><b class="mono synccode">${esc(fmtCode(sentCode))}</b><button class="btn small" type="button" id="sy-copy">Copy</button>`:`<button class="btn small primary" type="button" id="sy-new">Send my setup</button>`}
+    <span class="muted">or</span><input id="sy-code" class="hbin" style="width:120px;text-align:left" placeholder="ABCD-EFGH" autocomplete="off"><button class="btn small" type="button" id="sy-join">Receive</button></div>
+    <p class="muted syncnote">${sentCode?'Enter this code on the other browser within an hour. It works once, then it is deleted.':'Sends your bands and sliders once, as a short code you type on your phone or another browser. Receiving replaces that browser\u2019s bands.'}${syncMsg?' <b>'+esc(syncMsg)+'</b>':''}</p>`;
   else h+=`<div class="syncrow"><button class="btn small" type="button" id="sy-export">Copy transfer code</button><input id="sy-code" class="hbin" style="width:160px;text-align:left" placeholder="Paste a code" autocomplete="off"><button class="btn small" type="button" id="sy-join">Load</button></div>
-    <p class="muted syncnote">Copies your bands and sliders to another browser once. Live sync appears here when the site\u2019s free sync server is set up.</p>`;
+    <p class="muted syncnote">Copies your bands and sliders to another browser once.${syncMsg?' <b>'+esc(syncMsg)+'</b>':''}</p>`;
   el.innerHTML=h;
   const on=(id,fn)=>{ const b=$('#'+id); if(b) b.onclick=fn; };
-  on('sy-copy',()=>copyText(fmtCode(syncCode)));
-  on('sy-stop',()=>{ syncCode=null; LSset('ms27-sync-code',null); syncMsg=''; renderSyncBox(); toast('This browser stopped syncing'); });
-  on('sy-new',createCode);
-  on('sy-join',()=>joinCode($('#sy-code').value));
+  on('sy-copy',()=>copyText(fmtCode(sentCode)));
+  on('sy-new',sendSetup);
+  on('sy-join',()=>receiveCode($('#sy-code').value));
   on('sy-export',()=>copyText('MS1.'+b64e(payload()),$('#sy-code')));
-  const inp=$('#sy-code'); if(inp) inp.onkeydown=e=>{ if(e.key==='Enter') joinCode(inp.value); };
+  const inp=$('#sy-code'); if(inp) inp.onkeydown=e=>{ if(e.key==='Enter') receiveCode(inp.value); };
 }
-document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') pullSync(); });
-
 /* ---------- live lineup check (runs in each visitor's browser) ----------
    Festival sites don't allow direct cross-site reads, so pages are fetched through
    the free Jina Reader (r.jina.ai), which returns them as text with CORS enabled.
@@ -790,7 +796,7 @@ render();
     baseFests=await fr.json(); sync=mr&&mr.ok?await mr.json():null;
     try{ const cfg=cr&&cr.ok?await cr.json():{}; SYNC_URL=String(cfg.syncUrl||'').replace(/\/+$/,''); }catch(e){}
   }catch(e){ dbState='error'; render(); return; }
-  dbState='ready'; loadLive(); applyLive(); render(); renderLive(); pullSync();
+  dbState='ready'; loadLive(); applyLive(); render(); renderLive();
   if(!liveData || Date.now()-liveData.at > LIVE_EVERY_H*3600e3) setTimeout(()=>liveCheck(false),800);
 })();
 })();

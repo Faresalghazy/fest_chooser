@@ -247,6 +247,9 @@ table.hbm td:first-child .pn{font-weight:500}
 .hbli{display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:center;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:8px 0;cursor:pointer;color:var(--ink)}
 .hbli b{font-size:18px;color:var(--accent)}
 @media (max-width:640px){.hblist{display:block}}
+.syncrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.synccode{font-size:16px;letter-spacing:.08em;color:var(--accent)}
+.syncnote{margin:6px 0 0;font-size:12px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:999px;z-index:30;font-size:13px}
 .src{font-size:12px;word-break:break-all}
 .ro-banner{font-size:12px;color:var(--warn);margin-top:6px}
@@ -271,7 +274,7 @@ table.hbm td:first-child .pn{font-weight:500}
     <a href="#my-bands" data-v="my-bands">My bands</a>
   </nav>
   <div id="live" class="live" aria-live="polite"></div>
-  <main id="view"><div class="state">Loading festival data…</div></main>
+  <main id="view"><div class="state">Loading festival data&#x2026;</div></main>
 </div>
 <div id="drawer-root"></div>
 <div id="toast-root"></div>
@@ -284,13 +287,13 @@ const COMPS=[
   {k:'ease', label:'Ticket ease',  def:3, help:'Rewards festivals where you can still buy at face value. Sold out gets nothing.'},
   {k:'scale',label:'Scale',        def:2, help:'Rewards Hellfest/Wacken-size crowds and production over mid-size festivals.'},
   {k:'metal',label:'Metal focus',  def:2, help:'Rewards all-metal bills. Mixed rock/pop bills (e.g. Nova Rock) get less.'},
-  {k:'uniq', label:'Lineup uniqueness', def:1, help:'Rewards bills with bands you can’t see at the other festivals here.'},
+  {k:'uniq', label:'Lineup uniqueness', def:1, help:'Rewards bills with bands you can\u2019t see at the other festivals here.'},
   {k:'price',label:'Price',        def:1, help:'Rewards cheaper passes (camping add-on included where known).'},
   {k:'camp', label:'Camping',      def:1, help:'Rewards camping included in the ticket; paid add-on scores less; none scores nothing.'},
 ];
 const COMP_COLOR={fit:'var(--accent)',sent:'var(--good)',ease:'var(--info)',scale:'var(--ink)',metal:'var(--bad)',uniq:'var(--warn)',price:'var(--muted)',camp:'var(--line)'};
 const STATUS={on_sale:'On sale',not_yet:'Not on sale yet',sold_out:'Sold out'};
-// Headbang score: how hard you'd headbang to this band, 1–10 (old Must see/Want/Bonus picks become 9/6/3)
+// Headbang score: how hard you'd headbang to this band, 1\u201310 (old Must see/Want/Bonus picks become 9/6/3)
 const pScore=p=>{ const v=Number(p?.score); return Number.isFinite(v)?v:0; };
 const HB_DEFAULT=50;
 const fmtN=v=>Number.isInteger(v)?String(v):String(Math.round(v*100)/100);
@@ -303,13 +306,13 @@ let settingsVersionTimer=null;
 
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\(.*?\)/g,'').replace(/\bfeat\..*$/,'').replace(/&/g,'and').replace(/^the\s+/,'').replace(/[^a-z0-9]+/g,' ').trim()
+const norm=s=>String(s||'').replace(/[\u0142\u0141]/g,'l').replace(/[\u00f8\u00d8]/g,'o').replace(/[\u00e6\u00c6]/g,'ae').replace(/\u00df/g,'ss').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\(.*?\)/g,'').replace(/\s[\u2013\u2014-]\s.*$/,'').replace(/\bfeat\..*$/,'').replace(/\s*[&+]\s*/g,' and ').replace(/^the\s+/,'').replace(/[^a-z0-9]+/g,' ').trim()
   .replace(/^cavalera conspiracy$/,'cavalera');
 const slug=s=>norm(s).replace(/ /g,'-').slice(0,120)||('b'+Date.now());
 const today=()=>new Date().toISOString().slice(0,10);
 const fmtDate=(a,b)=>{ if(!a) return 'Dates TBA'; const o={day:'numeric',month:'short'}; const A=new Date(a+'T00:00:00'),B=b?new Date(b+'T00:00:00'):null;
   const dA=A.toLocaleDateString('en-GB',{weekday:'short'}); const dB=B?B.toLocaleDateString('en-GB',{weekday:'short'}):'';
-  return `${dA} ${A.toLocaleDateString('en-GB',o)}${B?` – ${dB} ${B.toLocaleDateString('en-GB',o)}`:''}`; };
+  return `${dA} ${A.toLocaleDateString('en-GB',o)}${B?` \u2013 ${dB} ${B.toLocaleDateString('en-GB',o)}`:''}`; };
 const price=f=> (f.price_2027??f.price_2026);
 const priceEff=f=> price(f)==null?null: price(f)+(f.camping_type==='addon'&&f.camping_addon_eur?f.camping_addon_eur:0);
 const toast=msg=>{const r=$('#toast-root'); r.innerHTML=`<div class="toast" role="status">${esc(msg)}</div>`; clearTimeout(toast.t); toast.t=setTimeout(()=>r.innerHTML='',2400);};
@@ -351,7 +354,7 @@ function analyse(){
   fests.sort((a,b)=>b._score-a._score);
   return idx;
 }
-const trendOf=f=> f._slope==null?['flat','—']: f._slope>0.15?['up','▲ Rising']: f._slope<-0.15?['down','▼ Falling']:['flat','▬ Steady'];
+const trendOf=f=> f._slope==null?['flat','\u2014']: f._slope>0.15?['up','\u25b2 Rising']: f._slope<-0.15?['down','\u25bc Falling']:['flat','\u25ac Steady'];
 
 /* ---------- small renderers ---------- */
 function spark(f){
@@ -369,7 +372,7 @@ const scoreBar=f=>`<div class="scorebar"><div class="bar">${f._parts.map(p=>`<sp
 
 /* ---------- views ---------- */
 function wLabel(k){ if(k==='fit'&&!picks.length) return 'off'; const act=COMPS.filter(c=>weights[c.k]>0&&!(c.k==='fit'&&!picks.length)); const W=act.reduce((a,c)=>a+weights[c.k],0); const v=weights[k];
-  return v? `${v} · ${Math.round(v/W*100)}%` : '0 · ignored'; }
+  return v? `${v} \u00b7 ${Math.round(v/W*100)}%` : '0 \u00b7 ignored'; }
 function visible(){ return fests.filter(f=>!(filters.hideSold&&f.ticket_status==='sold_out')&&!(filters.bigOnly&&(f.scale||0)<4)); }
 
 function renderRanking(){
@@ -380,10 +383,10 @@ function renderRanking(){
       <small>${off?'Add bands under My bands to switch this on.':esc(c.help)}</small></div>`; }).join('');
   $('#view').innerHTML=`<div class="rank-grid">
     <aside class="panel weights" aria-label="Weights">
-      <div class="label">How much each factor counts</div><p class="muted" style="margin:0;font-size:11.5px">0 = ignore, 10 = matters most. The percentage is that factor’s share of the final score.</p>${wHtml}
+      <div class="label">How much each factor counts</div><p class="muted" style="margin:0;font-size:11.5px">0 = ignore, 10 = matters most. The percentage is that factor\u2019s share of the final score.</p>${wHtml}
       <div class="toggles">
         <label><input type="checkbox" id="f-sold" ${filters.hideSold?'checked':''}> Hide sold-out festivals</label>
-        <label><input type="checkbox" id="f-big" ${filters.bigOnly?'checked':''}> Big names only (scale 4–5)</label>
+        <label><input type="checkbox" id="f-big" ${filters.bigOnly?'checked':''}> Big names only (scale 4\u20135)</label>
       </div>
       <button class="btn small" id="w-reset" type="button">Reset weights</button>
     </aside>
@@ -391,7 +394,7 @@ function renderRanking(){
     </div>`;
   renderRows();
   const ch=[...(sync?.changes||[]),...liveLog()].sort((a,b)=>String(a.date).localeCompare(String(b.date))).slice(-12).reverse();
-  $('#rankrows').insertAdjacentHTML('afterend',`<section class="panel" style="margin-top:20px" aria-label="Recent changes"><div class="label" style="margin-bottom:8px">Recent updates</div>${ch.length?`<ul class="plain">${ch.map(c=>`<li><span class="mono muted">${esc(c.date)}</span> <b>${esc(c.festival||'')}</b> ${esc(c.text)}${c.url?` · <a href="${esc(c.url)}" target="_blank" rel="noopener">source</a>`:''}</li>`).join('')}</ul>`:'<p class="muted" style="margin:0;font-size:13px">Every few hours, this page re-reads each festival’s lineup listing in your browser and adds newly announced bands. Hand-checked updates also show here.</p>'}</section>`);
+  $('#rankrows').insertAdjacentHTML('afterend',`<section class="panel" style="margin-top:20px" aria-label="Recent changes"><div class="label" style="margin-bottom:8px">Recent updates</div>${ch.length?`<ul class="plain">${ch.map(c=>`<li><span class="mono muted">${esc(c.date)}</span> <b>${esc(c.festival||'')}</b> ${esc(c.text)}${c.url?` \u00b7 <a href="${esc(c.url)}" target="_blank" rel="noopener">source</a>`:''}</li>`).join('')}</ul>`:'<p class="muted" style="margin:0;font-size:13px">Every few hours, this page re-reads each festival\u2019s lineup listing in your browser and adds newly announced bands. Hand-checked updates also show here.</p>'}</section>`);
   $('#view').querySelectorAll('input[type=range]').forEach(el=>el.addEventListener('input',e=>{ const k=e.target.dataset.w; weights[k]=+e.target.value; COMPS.forEach(c=>{const o=$('#o-'+c.k); if(o) o.textContent=wLabel(c.k);}); saveSettings(); analyse(); renderLeader(); renderRows(); }));
   $('#f-sold').onchange=e=>{filters.hideSold=e.target.checked; saveSettings(); render();};
   $('#f-big').onchange=e=>{filters.bigOnly=e.target.checked; saveSettings(); render();};
@@ -400,19 +403,19 @@ function renderRanking(){
 function renderRows(){
   const list=visible();
   const el=$('#rankrows'); if(!el) return;
-  el.innerHTML=`<div class="row-head label"><span>#</span><span>Festival</span><span class="c-date">2027 dates</span><span>Tickets</span><span class="c-price">Pass</span><span class="c-sent">Sentiment</span><span class="c-score">Lineup · score</span></div>
+  el.innerHTML=`<div class="row-head label"><span>#</span><span>Festival</span><span class="c-date">2027 dates</span><span>Tickets</span><span class="c-price">Pass</span><span class="c-sent">Sentiment</span><span class="c-score">Lineup \u00b7 score</span></div>
       <div class="rows">${list.map((f,i)=>{ const [tc,tl]=trendOf(f);
         return `<button class="row" type="button" data-open="${esc(f.id)}">
           <span class="rk">${i+1}</span>
-          <span><span class="fname">${esc(f.name)} <span class="cc">${esc(f.cc)}</span></span><span class="sub"><span class="tier">${esc(f.tier)}</span> · ${esc(f.city)}</span></span>
+          <span><span class="fname">${esc(f.name)} <span class="cc">${esc(f.cc)}</span></span><span class="sub"><span class="tier">${esc(f.tier)}</span> \u00b7 ${esc(f.city)}</span></span>
           <span class="c-date"><span class="mono" style="font-size:12.5px">${esc(fmtDate(f.start,f.end))}</span><br><span class="sub">${f.days||'?'} days</span></span>
           <span>${statusPill(f)}<br>${pips(f.ticket_status==='sold_out'?1:(f.ticket_ease||1))}</span>
-          <span class="c-price mono">${price(f)!=null?'€'+Math.round(price(f)):'<span class="est">€ ?</span>'}<br><span class="sub">${f.price_2027!=null?'2027':f.price_2026!=null?'2026 price':'not found'}${f.camping_type==='addon'?' + camp':''}</span></span>
+          <span class="c-price mono">${price(f)!=null?'\u20ac'+Math.round(price(f)):'<span class="est">\u20ac ?</span>'}<br><span class="sub">${f.price_2027!=null?'2027':f.price_2026!=null?'2026 price':'not found'}${f.camping_type==='addon'?' + camp':''}</span></span>
           <span class="c-sent">${spark(f)}<br><span class="trend ${tc}">${tl}</span></span>
-          <span class="c-score"><span class="sub c-line">${(f.lineup||[]).length?`${f.lineup.length} bands · ${f._uniqCount!=null?Math.round(f._uniqCount/f._norms.size*100)+'% unique':'too few to compare'}`:'Lineup not announced'}${picks.length?` · <b style="color:var(--accent)">${f._picked.length} of yours</b>`:''}</span>${scoreBar(f)}</span>
+          <span class="c-score"><span class="sub c-line">${(f.lineup||[]).length?`${f.lineup.length} bands \u00b7 ${f._uniqCount!=null?Math.round(f._uniqCount/f._norms.size*100)+'% unique':'too few to compare'}`:'Lineup not announced'}${picks.length?` \u00b7 <b style="color:var(--accent)">${f._picked.length} of yours</b>`:''}</span>${scoreBar(f)}</span>
         </button>`;}).join('') || '<div class="state">No festivals match these filters.</div>'}</div>
       <div class="legend">${COMPS.filter(c=>!(c.k==='fit'&&!picks.length)).map(c=>`<span><i style="background:${COMP_COLOR[c.k]}"></i>${esc(c.label)}</span>`).join('')}</div>
-      <p class="note">Score = weighted average of the components (0–100). Where a value is unknown (lineup not announced, price not found) the festival gets the median of the others for that component, marked “est.” in its detail panel. Click a festival for sentiment by year, ratings, pricing notes, sources and lineup editing.</p>`;
+      <p class="note">Score = weighted average of the components (0\u2013100). Where a value is unknown (lineup not announced, price not found) the festival gets the median of the others for that component, marked \u201cest.\u201d in its detail panel. Click a festival for sentiment by year, ratings, pricing notes, sources and lineup editing.</p>`;
   el.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>{ openId=b.dataset.open; renderDrawer(lastIdx); }));
 }
 
@@ -422,7 +425,7 @@ function renderLineups(idx){
   const q=norm(search);
   let found='';
   if(q){ const hits=[...idx.entries()].filter(([k])=>k.includes(q)).slice(0,8);
-    found= hits.length? hits.map(([k,v])=>`<b>${esc(v.name)}</b>: ${[...v.fests].map(id=>esc(fests.find(f=>f.id===id).name)).join(', ')}`).join('<br>') : `No announced 2027 festival lists “${esc(search)}” yet.`; }
+    found= hits.length? hits.map(([k,v])=>`<b>${esc(v.name)}</b>: ${[...v.fests].map(id=>esc(fests.find(f=>f.id===id).name)).join(', ')}`).join('<br>') : `No announced 2027 festival lists \u201c${esc(search)}\u201d yet.`; }
   // overlap matrix
   const ids=withL.map(f=>f.id);
   let maxO=1; const ov={}; ids.forEach(a=>ids.forEach(b=>{ if(a===b) return; const A=fests.find(f=>f.id===a)._norms,B=fests.find(f=>f.id===b)._norms; let n=0; A.forEach(x=>{if(B.has(x))n++;}); ov[a+'|'+b]=n; if(n>maxO)maxO=n; }));
@@ -464,7 +467,7 @@ function renderCalendar(){
   $('#view').innerHTML=`<div class="panel scroll-x"><div class="cal">
     <div class="cal-head"><span></span><div class="cal-months">${months.map(([m,p])=>`<span style="left:${p}%">${m}</span>`).join('')}</div></div>
     ${list.map(f=>`<div class="cal-row"><span class="nm">${esc(f.name)}</span><div class="cal-track">${weeks.map(w=>`<span class="wk" style="left:${w}%"></span>`).join('')}
-      <button type="button" class="cal-bar ${f.ticket_status==='sold_out'?'sold_out':clashIds.has(f.id)?'clash':''}" data-open="${esc(f.id)}" style="left:${pos(f.start)}%;width:calc(${pos(f.end)-pos(f.start)+100/span}% )" title="${esc(f.name)}: ${esc(fmtDate(f.start,f.end))}">${+f.start.slice(8)}–${+(f.end||f.start).slice(8)}</button></div></div>`).join('')}
+      <button type="button" class="cal-bar ${f.ticket_status==='sold_out'?'sold_out':clashIds.has(f.id)?'clash':''}" data-open="${esc(f.id)}" style="left:${pos(f.start)}%;width:calc(${pos(f.end)-pos(f.start)+100/span}% )" title="${esc(f.name)}: ${esc(fmtDate(f.start,f.end))}">${+f.start.slice(8)}\u2013${+(f.end||f.start).slice(8)}</button></div></div>`).join('')}
   </div>
   <div class="legend"><span><i style="background:var(--ink)"></i>No clash</span><span><i style="background:var(--accent)"></i>Overlaps another festival</span><span><i style="background:var(--bad)"></i>Sold out</span><span>Grid lines are Mondays.</span></div></div>
   <div class="clashes"><div class="label">Date overlaps</div>${clashPairs.map(([a,b])=>`<div>${esc(a.name)} and ${esc(b.name)} <span class="muted">(${esc(fmtDate(a.start,a.end))} / ${esc(fmtDate(b.start,b.end))})</span></div>`).join('')||'<div class="muted">None.</div>'}
@@ -476,33 +479,34 @@ function renderPicks(idx){
   const cols=fests.slice().sort((a,b)=>(b._hb-a._hb)||(b._picked.length-a._picked.length)||(b._score-a._score));
   const maxHb=Math.max(1e-9,...cols.map(f=>Math.abs(f._hb))); const totalHb=picks.reduce((a,p)=>a+pScore(p),0);
   const rows=picks.slice().sort((a,b)=>(pScore(b)-pScore(a))||a.name.localeCompare(b.name)).map(p=>{ const n=norm(p.name); const sc=pScore(p);
-    return `<tr><td><span class="pn">${esc(p.name)}</span> <button class="x" type="button" aria-label="Remove ${esc(p.name)}" data-unpick="${esc(p.id)}">×</button></td>
+    return `<tr><td><span class="pn">${esc(p.name)}</span> <button class="x" type="button" aria-label="Remove ${esc(p.name)}" data-unpick="${esc(p.id)}">\u00d7</button></td>
       <td>${hbInput(p.name,sc)}</td>
-      ${cols.map(f=>`<td>${f._norms.has(n)?`<span class="hbdot ${sc<0?'neg':''}" style="--a:${sc>0?0.35+0.65*Math.min(1,sc/Math.max(...picks.map(pScore))):0}" title="${esc(p.name)} plays ${esc(f.name)}">${esc(fmtN(sc))}</span>`:(f.lineup||[]).length?'':'<span class="muted" title="Lineup not announced yet">·</span>'}</td>`).join('')}</tr>`; }).join('');
-  $('#view').innerHTML=`<div class="panel" style="margin-bottom:16px">
+      ${cols.map(f=>`<td>${f._norms.has(n)?`<span class="hbdot ${sc<0?'neg':''}" style="--a:${sc>0?0.35+0.65*Math.min(1,sc/Math.max(...picks.map(pScore))):0}" title="${esc(p.name)} plays ${esc(f.name)}">${esc(fmtN(sc))}</span>`:(f.lineup||[]).length?'':'<span class="muted" title="Lineup not announced yet">\u00b7</span>'}</td>`).join('')}</tr>`; }).join('');
+  $('#view').innerHTML=`<div class="panel" id="syncbox" style="margin-bottom:16px"></div><div class="panel" style="margin-bottom:16px">
     <form class="picks-add" id="pickform">
       <div class="field"><label class="label" for="pname">Band</label><input id="pname" list="bandlist" placeholder="Type a band name" autocomplete="off" required></div>
       <div class="field" style="flex:0 1 130px"><label class="label" for="pscore">Headbang score</label><input id="pscore" type="number" step="any" inputmode="decimal" value="${HB_DEFAULT}" required></div>
       <button class="btn primary" type="submit">Add band</button>
     </form>
     <datalist id="bandlist">${all.map(b=>`<option value="${esc(b)}">`).join('')}</datalist>
-    <p class="muted" style="margin:0;font-size:12.5px"><b>Headbang score</b>: any number you like for how much you want to see this band. Bigger means more; negative means you’d rather avoid them. Each festival’s total adds up the scores of your bands it has booked. You can add bands nobody has booked yet; they count as soon as a festival announces them.</p>
+    <p class="muted" style="margin:0;font-size:12.5px"><b>Headbang score</b>: any number you like for how much you want to see this band. Bigger means more; negative means you\u2019d rather avoid them. Each festival\u2019s total adds up the scores of your bands it has booked. You can add bands nobody has booked yet; they count as soon as a festival announces them.</p>
   </div>
-  ${picks.length?`<div class="panel scroll-x"><table class="matrix hbm"><thead><tr><th>Your bands (${picks.length})</th><th>Score</th>${cols.map((f,i)=>`<th><button type="button" class="colh" data-open="${esc(f.id)}" title="${esc(f.name)} · ${esc(fmtDate(f.start,f.end))}">${i===0&&f._hb>0?'<span class="crown">#1</span>':''}${esc(shortName(f))}</button></th>`).join('')}</tr></thead>
+  ${picks.length?`<div class="panel scroll-x"><table class="matrix hbm"><thead><tr><th>Your bands (${picks.length})</th><th>Score</th>${cols.map((f,i)=>`<th><button type="button" class="colh" data-open="${esc(f.id)}" title="${esc(f.name)} \u00b7 ${esc(fmtDate(f.start,f.end))}">${i===0&&f._hb>0?'<span class="crown">#1</span>':''}${esc(shortName(f))}</button></th>`).join('')}</tr></thead>
     <tbody>${rows}</tbody>
     <tfoot>
       <tr><th scope="row">Bands</th><td class="mono muted">${picks.length}</td>${cols.map(f=>`<td class="mono">${f._picked.length}<span class="muted">/${picks.length}</span></td>`).join('')}</tr>
       <tr class="hbtot"><th scope="row">Headbang total</th><td class="mono muted">${esc(fmtN(totalHb))}</td>${cols.map((f,i)=>`<td class="mono ${i===0&&f._hb>0?'best':''}"><b>${esc(fmtN(f._hb))}</b><div class="mbar"><span style="width:${Math.max(0,Math.round(f._hb/maxHb*100))}%"></span></div></td>`).join('')}</tr>
     </tfoot></table></div>
     <div class="panel hblist" aria-label="Headbang totals"><div class="label" style="margin-bottom:8px">Headbang totals</div>${cols.filter(f=>f._picked.length).map((f,i)=>`<button type="button" class="hbli" data-open="${esc(f.id)}"><span class="mono muted">${i+1}</span><span>${esc(f.name)}<br><span class="sub">${f._picked.length} of ${picks.length} bands</span></span><b class="mono">${esc(fmtN(f._hb))}</b></button>`).join('')||'<span class="muted">None of your bands are booked yet.</span>'}</div>
-    <p class="note">Festivals are sorted by Headbang total, highest first. A dot (·) means that festival hasn’t announced any bands yet. Tap a festival name to open it.</p>`
-    :`<div class="state">No bands yet. Add bands here or in the All bands tab and give each a Headbang score. Each festival’s total shows up at the bottom of this table.</div>`}`;
+    <p class="note">Festivals are sorted by Headbang total, highest first. A dot (\u00b7) means that festival hasn\u2019t announced any bands yet. Tap a festival name to open it.</p>`
+    :`<div class="state">No bands yet. Add bands here or in the All bands tab and give each a Headbang score. Each festival\u2019s total shows up at the bottom of this table.</div>`}`;
   $('#pickform').onsubmit=e=>{ e.preventDefault(); const name=$('#pname').value.trim(); if(!name) return; const sc=Number($('#pscore').value); if(!Number.isFinite(sc)||$('#pscore').value===''){ toast('Give the band a score'); return; }
     const known=all.find(b=>norm(b)===norm(name)); const nm=known||name;
     if(picks.some(p=>p.id===slug(nm))){ toast(`${nm} is already on your list`); return; }
     setPick(nm,sc); toast(`Added ${nm}`); };
   $('#view').querySelectorAll('[data-unpick]').forEach(b=>b.onclick=()=>{ const p=picks.find(x=>x.id===b.dataset.unpick); if(p) setPick(p.name,null); });
   $('#view').querySelectorAll('[data-hb]').forEach(el=>el.onchange=()=>{ if(el.value===''||!Number.isFinite(Number(el.value))) return; setPick(el.dataset.hb,Number(el.value)); });
+  renderSyncBox();
 }
 
 /* ---------- all bands ---------- */
@@ -519,19 +523,19 @@ function renderBands(idx){
   if(bandOnly==='new') rows=rows.filter(r=>r.fests.some(f=>f._newBands?.has(r.k)));
   rows.sort(bandSort==='az'? (a,b)=>a.name.localeCompare(b.name) : (a,b)=>b.fests.length-a.fests.length||a.name.localeCompare(b.name));
   let lastL='', html='';
-  rows.forEach(r=>{ const p=pickMap.get(r.k); const L=(r.name.normalize('NFD').replace(/[̀-ͯ]/g,'')[0]||'#').toUpperCase().replace(/[^A-Z]/,'#');
+  rows.forEach(r=>{ const p=pickMap.get(r.k); const L=(r.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'')[0]||'#').toUpperCase().replace(/[^A-Z]/,'#');
     if(bandSort==='az'&&L!==lastL){ html+=`<div class="letter" aria-hidden="true">${L}</div>`; lastL=L; }
     const isNew=r.fests.some(f=>f._newBands?.has(r.k));
     html+=`<div class="brow ${p?'picked':''}"><span class="bn">${esc(r.name)}${isNew?'<span class="newtag">new</span>':''}</span>
-      <span class="fchips">${r.fests.sort((a,b)=>(a.start||'').localeCompare(b.start||'')).map(f=>`<button type="button" class="fchip" data-open="${esc(f.id)}" title="${esc(f.name)} · ${esc(fmtDate(f.start,f.end))}">${esc(shortName(f))}</button>`).join('')}</span>
+      <span class="fchips">${r.fests.sort((a,b)=>(a.start||'').localeCompare(b.start||'')).map(f=>`<button type="button" class="fchip" data-open="${esc(f.id)}" title="${esc(f.name)} \u00b7 ${esc(fmtDate(f.start,f.end))}">${esc(shortName(f))}</button>`).join('')}</span>
       ${p?hbInput(r.name,pScore(p)):`<button type="button" class="btn small addb" data-add="${esc(r.name)}" aria-label="Add ${esc(r.name)} with score ${HB_DEFAULT}">+ Add</button>`}</span></div>`; });
   $('#view').innerHTML=`<div class="lineup-tools">
       <div class="field" style="flex:2 1 220px"><label class="label" for="bq">Search bands</label><input id="bq" type="search" placeholder="Type a band name" value="${esc(bandQ)}" autocomplete="off"></div>
       <div class="field" style="flex:1 1 160px"><label class="label" for="bf">Festival</label><select id="bf"><option value="">All festivals</option>${fests.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(f=>`<option value="${esc(f.id)}" ${bandFest===f.id?'selected':''}>${esc(f.name)}</option>`).join('')}</select></div>
       <div class="field" style="flex:1 1 150px"><label class="label" for="bo">Show</label><select id="bo"><option value="">All bands</option><option value="excl" ${bandOnly==='excl'?'selected':''}>Only at one festival</option><option value="mine" ${bandOnly==='mine'?'selected':''}>My bands</option><option value="new" ${bandOnly==='new'?'selected':''}>Newly announced</option></select></div>
-      <div class="field" style="flex:1 1 140px"><label class="label" for="bs">Sort</label><select id="bs"><option value="fests">Most festivals first</option><option value="az" ${bandSort==='az'?'selected':''}>A–Z</option></select></div>
+      <div class="field" style="flex:1 1 140px"><label class="label" for="bs">Sort</label><select id="bs"><option value="fests">Most festivals first</option><option value="az" ${bandSort==='az'?'selected':''}>A\u2013Z</option></select></div>
     </div>
-    <p class="muted" style="margin:0 0 10px;font-size:12.5px">${rows.length} of ${totalN} announced bands · ${picks.length} in My bands. Press + Add to add a band with a Headbang score of 50, then type any number to change it. Clear the box to remove the band. Tap a festival to open it.</p>
+    <p class="muted" style="margin:0 0 10px;font-size:12.5px">${rows.length} of ${totalN} announced bands \u00b7 ${picks.length} in My bands. Press + Add to add a band with a Headbang score of 50, then type any number to change it. Clear the box to remove the band. Tap a festival to open it.</p>
     <div class="bandlist">${html||'<div class="state">No bands match.</div>'}</div>`;
   const bq=$('#bq'); bq.addEventListener('input',e=>{ bandQ=e.target.value; clearTimeout(bq.t); bq.t=setTimeout(()=>{ render(); const el=$('#bq'); el.focus(); el.setSelectionRange(el.value.length,el.value.length); },200); });
   $('#bf').onchange=e=>{ bandFest=e.target.value; render(); };
@@ -553,16 +557,16 @@ function renderDrawer(idx){
   const lineupChips=(f.lineup||[]).map((b,i)=>{ const cnt=idx.get(norm(b))?.fests.size||1; return `<span class="chip ${cnt===1?'u':''}" title="${cnt===1?'Only here so far':'At '+cnt+' festivals'}">${esc(b)}${f._newBands?.has(norm(b))?' <span class="newtag">new</span>':''}</span>`; }).join('');
   root.innerHTML=`<div class="scrim" data-close></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="${esc(f.name)}">
     <button class="btn small dclose" type="button" data-close>Close</button>
-    <div class="tier">${esc(f.tier)} · ranked #${rank} · score ${Math.round(f._score)}</div>
+    <div class="tier">${esc(f.tier)} \u00b7 ranked #${rank} \u00b7 score ${Math.round(f._score)}</div>
     <h2>${esc(f.name)}</h2>
-    <div class="muted" style="margin-top:6px">${esc(f.venue||f.city)}, ${esc(f.country)} · since ${esc(f.founded)} · ${esc(f.capacity)}</div>
+    <div class="muted" style="margin-top:6px">${esc(f.venue||f.city)}, ${esc(f.country)} \u00b7 since ${esc(f.founded)} \u00b7 ${esc(f.capacity)}</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center">${statusPill(f)}<span class="mono">${esc(fmtDate(f.start,f.end))}</span><span class="trend ${tc}">${tl}</span></div>
 
     <section><h3>Score breakdown</h3>${comp}</section>
 
     <section><h3>Tickets and price</h3><dl class="kv">
       <dt>Status</dt><dd>${esc(f.ticket_status_note)}</dd>
-      <dt>Full pass</dt><dd class="mono">${f.price_2027!=null?'€'+f.price_2027+' (2027)':'2027 not published'}${f.price_2026!=null?' · €'+f.price_2026+' (2026)':''}</dd>
+      <dt>Full pass</dt><dd class="mono">${f.price_2027!=null?'\u20ac'+f.price_2027+' (2027)':'2027 not published'}${f.price_2026!=null?' \u00b7 \u20ac'+f.price_2026+' (2026)':''}</dd>
       <dt>Ticket ease</dt><dd>${pips(f.ticket_ease||1)} <span class="muted">${esc(f.ticket_ease_notes)}</span></dd>
       <dt>Camping</dt><dd>${esc(f.camping)}</dd>
       <dt>Pricing notes</dt><dd class="muted">${esc(f.price_notes)}</dd>
@@ -571,10 +575,10 @@ function renderDrawer(idx){
     <section><h3>Sentiment by edition</h3>
       ${yrs.map(y=>{const s=f.sentiment[y]; return `<div class="yr"><span class="mono">${y}</span><span class="sc s${s.score}">${s.score>0?'+':''}${s.score}</span><span>${esc(s.summary)}</span></div>`;}).join('')}
       <p class="muted" style="margin:4px 0 0;font-size:12.5px"><b>Trend:</b> ${esc(f.trend_reason)}</p>
-      <p class="muted" style="margin:0;font-size:11.5px">Scores run from −2 (major problems) to +2 (widely praised), judged from reviews, press and fan threads about each edition.</p>
+      <p class="muted" style="margin:0;font-size:11.5px">Scores run from \u22122 (major problems) to +2 (widely praised), judged from reviews, press and fan threads about each edition.</p>
     </section>
 
-    <section><h3>Ratings and awards</h3><ul class="plain">${(f.ratings||[]).filter(r=>r.value).map(r=>`<li><b>${esc(r.source)}</b>: ${esc(r.value)}${r.url?` · <a href="${esc(r.url)}" target="_blank" rel="noopener">source</a>`:''}</li>`).join('')||'<li class="muted">No formal rating or award found.</li>'}</ul></section>
+    <section><h3>Ratings and awards</h3><ul class="plain">${(f.ratings||[]).filter(r=>r.value).map(r=>`<li><b>${esc(r.source)}</b>: ${esc(r.value)}${r.url?` \u00b7 <a href="${esc(r.url)}" target="_blank" rel="noopener">source</a>`:''}</li>`).join('')||'<li class="muted">No formal rating or award found.</li>'}</ul></section>
 
     <section><h3>2027 lineup (${(f.lineup||[]).length})</h3>
       <div class="chips">${lineupChips||'<span class="muted">Nothing announced yet.</span>'}</div>
@@ -589,15 +593,15 @@ function renderDrawer(idx){
 
     ${EDIT?`<section><h3>Update facts</h3><form id="factform" class="form-grid">
       <div class="field"><label class="label" for="e-status">Ticket status</label><select id="e-status">${Object.entries(STATUS).map(([k,v])=>`<option value="${k}" ${f.ticket_status===k?'selected':''}>${v}</option>`).join('')}</select></div>
-      <div class="field"><label class="label" for="e-ease">Ticket ease (1–5)</label><input id="e-ease" type="number" min="1" max="5" value="${esc(f.ticket_ease)}"></div>
-      <div class="field"><label class="label" for="e-metal">Metal focus (1–5)</label><input id="e-metal" type="number" min="1" max="5" value="${esc(f.metal_focus??'')}"></div>
-      <div class="field"><label class="label" for="e-scale">Scale (1–5)</label><input id="e-scale" type="number" min="1" max="5" value="${esc(f.scale??'')}"></div>
-      <div class="field"><label class="label" for="e-p27">2027 pass price (€)</label><input id="e-p27" type="number" step="0.01" value="${f.price_2027??''}"></div>
-      <div class="field"><label class="label" for="e-camp">Camping add-on (€)</label><input id="e-camp" type="number" step="0.5" value="${f.camping_addon_eur??''}"></div>
+      <div class="field"><label class="label" for="e-ease">Ticket ease (1\u20135)</label><input id="e-ease" type="number" min="1" max="5" value="${esc(f.ticket_ease)}"></div>
+      <div class="field"><label class="label" for="e-metal">Metal focus (1\u20135)</label><input id="e-metal" type="number" min="1" max="5" value="${esc(f.metal_focus??'')}"></div>
+      <div class="field"><label class="label" for="e-scale">Scale (1\u20135)</label><input id="e-scale" type="number" min="1" max="5" value="${esc(f.scale??'')}"></div>
+      <div class="field"><label class="label" for="e-p27">2027 pass price (\u20ac)</label><input id="e-p27" type="number" step="0.01" value="${f.price_2027??''}"></div>
+      <div class="field"><label class="label" for="e-camp">Camping add-on (\u20ac)</label><input id="e-camp" type="number" step="0.5" value="${f.camping_addon_eur??''}"></div>
       <div class="field"><label class="label" for="e-start">Start</label><input id="e-start" type="date" value="${esc(f.start||'')}"></div>
       <div class="field"><label class="label" for="e-end">End</label><input id="e-end" type="date" value="${esc(f.end||'')}"></div>
       <div class="field full"><label class="label" for="e-note">Ticket note</label><input id="e-note" value="${esc(f.ticket_status_note)}"></div>
-      <div class="full"><button class="btn primary small" type="submit">Save changes</button> <span class="muted" style="font-size:12px">Last updated ${esc(f.updated_at||'—')}</span></div>
+      <div class="full"><button class="btn primary small" type="submit">Save changes</button> <span class="muted" style="font-size:12px">Last updated ${esc(f.updated_at||'\u2014')}</span></div>
     </form></section>`:''}
 
     ${(f.live_sources||[]).length?`<section><h3>Lineup checked live from</h3><ul class="plain src">${f.live_sources.map(x=>x.url).map(u=>`<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a></li>`).join('')}</ul></section>`:''}
@@ -606,7 +610,7 @@ function renderDrawer(idx){
   root.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{openId=null; renderDrawer(idx);});
   root.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{ const i=+b.dataset.rm; const nl=f.lineup.filter((_,j)=>j!==i); await saveFest(f,{lineup:nl},'Removed from lineup'); });
   const ab=$('#addbtn'); if(ab) ab.onclick=async()=>{ const raw=$('#addb').value; const have=new Set((f.lineup||[]).map(norm));
-    const add=raw.split(/[\n,;•]+/).map(s=>s.trim()).filter(Boolean).filter(s=>{const n=norm(s); if(!n||have.has(n)) return false; have.add(n); return true;});
+    const add=raw.split(/[\n,;\u2022]+/).map(s=>s.trim()).filter(Boolean).filter(s=>{const n=norm(s); if(!n||have.has(n)) return false; have.add(n); return true;});
     if(!add.length){ toast('Nothing new to add'); return; } await saveFest(f,{lineup:[...(f.lineup||[]),...add]},`Added ${add.length} band${add.length>1?'s':''}`); };
   const ff=$('#factform'); if(ff) ff.onsubmit=async e=>{ e.preventDefault(); const num=v=>v===''?null:Number(v);
     await saveFest(f,{ticket_status:$('#e-status').value,ticket_ease:Math.max(1,Math.min(5,num($('#e-ease').value)||1)),metal_focus:Math.max(1,Math.min(5,num($('#e-metal').value)||3)),scale:Math.max(1,Math.min(5,num($('#e-scale').value)||3)),price_2027:num($('#e-p27').value),camping_addon_eur:num($('#e-camp').value),
@@ -616,10 +620,61 @@ function renderDrawer(idx){
 /* ---------- local storage (each visitor keeps their own bands and weights) ---------- */
 const LS=k=>{ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } };
 const LSset=(k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} };
-function savePicks(){ LSset('ms27-picks',picks); }
+function savePicks(){ LSset('ms27-picks',picks); touched(); }
 function setPick(name,score){ const id=slug(name); const i=picks.findIndex(p=>p.id===id); if(score==null){ if(i>=0) picks.splice(i,1); } else if(i>=0) picks[i]={id,name:picks[i].name,score}; else picks.push({id,name,score}); savePicks(); render(); }
-let setT=null; function saveSettings(){ clearTimeout(setT); setT=setTimeout(()=>LSset('ms27-settings',{weights,filters,wscale:10}),300); }
+let setT=null; function saveSettings(){ clearTimeout(setT); setT=setTimeout(()=>{ LSset('ms27-settings',{weights,filters,wscale:10}); touched(); },300); }
 async function saveFest(){}
+/* ---------- sync across browsers ----------
+   With "syncUrl" set in config.json (a free Cloudflare Worker, see worker/), a short code keeps
+   bands, weights and filters in step on every browser that uses it. Without it, a one-off
+   transfer code copies them from one browser to another. */
+let SYNC_URL='', syncCode=LS('ms27-sync-code'), syncMsg='', syncT=null;
+const stamp=()=>LS('ms27-stamp')||0;
+const payload=()=>({v:1,updated:stamp(),picks,weights,filters});
+const fmtCode=c=>c?c.slice(0,4)+'-'+c.slice(4):'';
+function applyPayload(p){ if(!p||!Array.isArray(p.picks)) return false;
+  picks=p.picks.filter(x=>x&&x.name&&Number.isFinite(Number(x.score))).map(x=>({id:x.id||slug(x.name),name:String(x.name),score:Number(x.score)}));
+  if(p.weights) weights={...weights,...p.weights}; if(p.filters) filters={...filters,...p.filters};
+  LSset('ms27-picks',picks); LSset('ms27-settings',{weights,filters,wscale:10}); LSset('ms27-stamp',p.updated||Date.now()); return true; }
+function touched(){ LSset('ms27-stamp',Date.now()); if(syncCode&&SYNC_URL){ clearTimeout(syncT); syncT=setTimeout(pushSync,3000); } }
+async function pushSync(){ try{ const r=await fetch(SYNC_URL+'/c/'+syncCode,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload())});
+    syncMsg=r.ok?'Saved':r.status===404?'This sync code no longer exists':'Could not save ('+r.status+')'; }catch(e){ syncMsg='Offline: changes will sync later'; } renderSyncBox(); }
+async function pullSync(){ if(!syncCode||!SYNC_URL) return;
+  try{ const r=await fetch(SYNC_URL+'/c/'+syncCode,{cache:'no-store'}); if(r.status===404){ syncMsg='This sync code no longer exists'; renderSyncBox(); return; }
+    const p=await r.json(); if((p.updated||0)>stamp()){ applyPayload(p); syncMsg='Updated from your other browsers'; render(); }
+    else if((p.updated||0)<stamp()) await pushSync(); else syncMsg='In sync'; }
+  catch(e){ syncMsg='Offline: showing this browser\u2019s copy'; } renderSyncBox(); }
+const b64e=o=>btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(o))));
+const b64d=t=>JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(t),c=>c.charCodeAt(0))));
+async function copyText(t,el){ try{ await navigator.clipboard.writeText(t); toast('Copied'); }catch(e){ if(el){ el.focus(); el.select(); } toast('Select the code and copy it'); } }
+async function joinCode(raw){ const t=String(raw||'').trim(); if(!t) return;
+  if(t.startsWith('MS1.')){ try{ if(applyPayload(b64d(t.slice(4)))){ toast('Loaded '+picks.length+' bands from the code'); render(); } }catch(e){ toast('That code looks incomplete. Copy it again.'); } return; }
+  const c=t.toUpperCase().replace(/[^A-Z2-9]/g,''); if(c.length!==8||!SYNC_URL){ toast('Codes look like ABCD-EFGH'); return; }
+  try{ const r=await fetch(SYNC_URL+'/c/'+c,{cache:'no-store'}); if(!r.ok){ toast('No sync found for '+fmtCode(c)); return; }
+    syncCode=c; LSset('ms27-sync-code',c); applyPayload(await r.json()); syncMsg='Joined: this browser now uses the synced bands'; render(); }
+  catch(e){ toast('Could not reach the sync server'); } }
+async function createCode(){ try{ LSset('ms27-stamp',stamp()||Date.now()); const r=await fetch(SYNC_URL+'/new',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload())});
+    const j=await r.json(); if(!j.code) throw 0; syncCode=j.code; LSset('ms27-sync-code',syncCode); syncMsg='Sync code created'; renderSyncBox(); }
+  catch(e){ toast('Could not reach the sync server'); } }
+function renderSyncBox(){ const el=$('#syncbox'); if(!el) return;
+  let h='<div class="label" style="margin-bottom:6px">Sync with your other browsers</div>';
+  if(SYNC_URL&&syncCode) h+=`<div class="syncrow"><span>Synced with code</span><b class="mono synccode">${esc(fmtCode(syncCode))}</b><button class="btn small" type="button" id="sy-copy">Copy</button><button class="btn small" type="button" id="sy-stop">Stop syncing here</button></div>
+    <p class="muted syncnote">Enter this code in the My bands tab on your phone or another browser. Changes sync both ways.${syncMsg?' <b>'+esc(syncMsg)+'</b>':''}</p>`;
+  else if(SYNC_URL) h+=`<div class="syncrow"><button class="btn small primary" type="button" id="sy-new">Create sync code</button><span class="muted">or</span><input id="sy-code" class="hbin" style="width:120px;text-align:left" placeholder="ABCD-EFGH" autocomplete="off"><button class="btn small" type="button" id="sy-join">Use code</button></div>
+    <p class="muted syncnote">A code keeps your bands and sliders the same on every browser that uses it. Using a code replaces this browser\u2019s bands with the synced ones.</p>`;
+  else h+=`<div class="syncrow"><button class="btn small" type="button" id="sy-export">Copy transfer code</button><input id="sy-code" class="hbin" style="width:160px;text-align:left" placeholder="Paste a code" autocomplete="off"><button class="btn small" type="button" id="sy-join">Load</button></div>
+    <p class="muted syncnote">Copies your bands and sliders to another browser once. Live sync appears here when the site\u2019s free sync server is set up.</p>`;
+  el.innerHTML=h;
+  const on=(id,fn)=>{ const b=$('#'+id); if(b) b.onclick=fn; };
+  on('sy-copy',()=>copyText(fmtCode(syncCode)));
+  on('sy-stop',()=>{ syncCode=null; LSset('ms27-sync-code',null); syncMsg=''; renderSyncBox(); toast('This browser stopped syncing'); });
+  on('sy-new',createCode);
+  on('sy-join',()=>joinCode($('#sy-code').value));
+  on('sy-export',()=>copyText('MS1.'+b64e(payload()),$('#sy-code')));
+  const inp=$('#sy-code'); if(inp) inp.onkeydown=e=>{ if(e.key==='Enter') joinCode(inp.value); };
+}
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') pullSync(); });
+
 /* ---------- live lineup check (runs in each visitor's browser) ----------
    Festival sites don't allow direct cross-site reads, so pages are fetched through
    the free Jina Reader (r.jina.ai), which returns them as text with CORS enabled.
@@ -629,15 +684,15 @@ let baseFests=[], live={state:'idle',msg:'',done:0,total:0}, liveData=null;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function loadLive(){ liveData=LS(LIVE_KEY); if(liveData&&!liveData.results) liveData=null; }
 function parseFH(md){
-  const i=md.search(/F(ü|u)r das [\s\S]{0,200}?sind \*{0,2}\d+ Bands?/);
+  const i=md.search(/F(\u00fc|u)r das [\s\S]{0,200}?sind \*{0,2}\d+ Bands?/);
   const out={bands:[],price:null,sold:false};
-  const pm=md.match(/Festivalticket ca\.\s*([\d.,]+)\s*€/); if(pm) out.price=Number(pm[1].replace(/\./g,'').replace(',','.'))||null;
-  const k=md.indexOf('Karten für'); if(k>=0 && /ausverkauft/i.test(md.slice(k,k+600))) out.sold=true;
+  const pm=md.match(/Festivalticket ca\.\s*([\d.,]+)\s*\u20ac/); if(pm) out.price=Number(pm[1].replace(/\./g,'').replace(',','.'))||null;
+  const k=md.indexOf('Karten f\u00fcr'); if(k>=0 && /ausverkauft/i.test(md.slice(k,k+600))) out.sold=true;
   if(i<0) return out;
   const rest=md.slice(i); const e=rest.search(/weitere Bands in Vorbereitung|Fehlen Bands\?|einige dieser Bands|\n#+ /);
-  const sec=rest.slice(0,e>0?e:5000).replace(/^[\s\S]*?best(ä|a)tigt:?/,'');
+  const sec=rest.slice(0,e>0?e:5000).replace(/^[\s\S]*?best(\u00e4|a)tigt:?/,'');
   out.bands=sec.replace(/\[([^\]]+)\]\([^)]*\)/g,'\u0001$1\u0001').replace(/\*/g,'')
-    .split(/[\u0001,\n]+/).map(x=>x.trim()).filter(x=>x&&x.length<80&&!/^(und|and|u\.a\.|\.+|…)$/i.test(x));
+    .split(/[\u0001,\n]+/).map(x=>x.trim()).filter(x=>x&&x.length<80&&!/^(und|and|u\.a\.|\.+|\u2026)$/i.test(x));
   return out;
 }
 function parseFI(md){
@@ -654,24 +709,26 @@ async function readThrough(url){
 function lev(a,b){ if(Math.abs(a.length-b.length)>2) return 9; const d=Array.from({length:a.length+1},(_,i)=>[i]); for(let j=1;j<=b.length;j++) d[0][j]=j;
   for(let i=1;i<=a.length;i++) for(let j=1;j<=b.length;j++) d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1)); return d[a.length][b.length]; }
 // skip listing typos and fragments of bands already on the bill ("Shall Burn", "Foesam and Jetsam", "Chaos A.D.")
-function dupish(n,full){ return full.some(x=> (n.length>=4&&x.includes(n)) || (n.length>=6&&lev(n,x.split(' ').slice(0,n.split(' ').length+1).join(' '))<=2) || (n.length>=6&&lev(n,x)<=2)); }
+function dupish(n,full,have){ const nc=n.replace(/ /g,'');
+  if(have&&[...have].some(e=>e.replace(/ /g,'')===nc||(e.length>=4&&(n.startsWith(e+' ')||e.startsWith(n+' '))))) return true;
+  return full.some(x=> (n.length>=4&&x.includes(n)) || (n.length>=6&&lev(n,x.split(' ').slice(0,n.split(' ').length+1).join(' '))<=2) || (n.length>=6&&lev(n,x)<=2)); }
 function applyLive(){
   fests=baseFests.map(f=>structuredClone(f));
   if(!liveData) return;
   fests.forEach(f=>{ const L=liveData.results[f.id]; if(!L) return;
     const have=new Set((f.lineup||[]).map(norm)); const add=[];
     const full=(f.lineup||[]).map(x=>String(x).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,' ').trim());
-    (L.bands||[]).forEach(b=>{ const n=norm(b); if(n&&!have.has(n)&&!dupish(n,full)){ have.add(n); add.push(b); } });
+    (L.bands||[]).forEach(b=>{ const n=norm(b); if(n&&!have.has(n)&&!dupish(n,full,have)){ have.add(n); add.push(b); } });
     if(add.length){ f.lineup=[...(f.lineup||[]),...add]; f._newBands=new Set(add.map(norm)); }
     f._live=L; });
 }
 function liveLog(){ if(!liveData) return []; const d=new Date(liveData.at).toISOString().slice(0,10);
-  return fests.filter(f=>f._newBands?.size).map(f=>({date:d,festival:f.name,text:`${f._newBands.size} band${f._newBands.size>1?'s':''} announced since the last hand-checked update: ${[...f.lineup].filter(b=>f._newBands.has(norm(b))).slice(0,6).join(', ')}${f._newBands.size>6?'…':''}`,url:(f._live?.src)||null})); }
+  return fests.filter(f=>f._newBands?.size).map(f=>({date:d,festival:f.name,text:`${f._newBands.size} band${f._newBands.size>1?'s':''} announced since the last hand-checked update: ${[...f.lineup].filter(b=>f._newBands.has(norm(b))).slice(0,6).join(', ')}${f._newBands.size>6?'\u2026':''}`,url:(f._live?.src)||null})); }
 function setLive(state,msg,done,total){ live={state,msg,done:done??live.done,total:total??live.total}; renderLive(); }
 function renderLive(){
   const el=$('#live'); if(!el) return;
   const last=liveData? new Date(liveData.at):null;
-  const lastTxt= last? `Lineups checked live ${last.toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}${liveData.newCount?` · ${liveData.newCount} new band${liveData.newCount>1?'s':''}`:''}.`:'Lineups not checked live yet.';
+  const lastTxt= last? `Lineups checked live ${last.toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}${liveData.newCount?` \u00b7 ${liveData.newCount} new band${liveData.newCount>1?'s':''}`:''}.`:'Lineups not checked live yet.';
   const btn= live.state!=='running' ? `<button class="btn small" type="button" id="checknow">Check now</button>`:'';
   const bar= live.state==='running'&&live.total? `<div class="lbar"><span style="width:${Math.round(live.done/live.total*100)}%"></span></div>`:'';
   el.className='live '+live.state;
@@ -683,9 +740,9 @@ async function liveCheck(manual){
   const jobs=[]; baseFests.forEach(f=>(f.live_sources||[]).forEach(s=>jobs.push({f,s})));
   if(!jobs.length) return;
   const results={}; let ok=0, fail=0, done=0;
-  setLive('running','Checking festival lineups…',0,jobs.length);
+  setLive('running','Checking festival lineups\u2026',0,jobs.length);
   const worker=async()=>{ while(jobs.length){ const j=jobs.shift();
-      setLive('running',`Checking ${j.f.name}…`,done,done+jobs.length+1);
+      setLive('running',`Checking ${j.f.name}\u2026`,done,done+jobs.length+1);
       try{ const md=await readThrough(j.s.url); const p=j.s.type==='festivalinfo'?parseFI(md):parseFH(md);
         const R=results[j.f.id]||(results[j.f.id]={bands:[],price:null,sold:false,src:j.s.url});
         R.bands.push(...p.bands); if(p.price!=null&&R.price==null) R.price=p.price; if(p.sold) R.sold=true; ok++; }
@@ -696,19 +753,19 @@ async function liveCheck(manual){
   if(!ok){ setLive('warn',`Could not reach the festival listings right now${manual?'':' (showing saved data)'}. Try Check now later.`); return; }
   liveData={at:Date.now(),results}; applyLive();
   liveData.newCount=fests.reduce((a,f)=>a+(f._newBands?.size||0),0); LSset(LIVE_KEY,liveData);
-  render(); setLive('ok',`Lineups checked just now: ${liveData.newCount?`${liveData.newCount} band${liveData.newCount>1?'s':''} newer than the saved data (marked “new”)`:'nothing newer than the saved data'}${fail?` · ${fail} source${fail>1?'s':''} unreachable`:''}.`);
+  render(); setLive('ok',`Lineups checked just now: ${liveData.newCount?`${liveData.newCount} band${liveData.newCount>1?'s':''} newer than the saved data (marked \u201cnew\u201d)`:'nothing newer than the saved data'}${fail?` \u00b7 ${fail} source${fail>1?'s':''} unreachable`:''}.`);
 }
 /* ---------- render ---------- */
 let lastIdx=new Map();
 function renderLeader(){
   const top=visible()[0]||fests[0]; if(!top) return; const best=top._parts.slice().sort((a,b)=>b.v-a.v).slice(0,2).map(p=>COMPS.find(c=>c.k===p.k).label.toLowerCase());
-  $('#leader').innerHTML=`<div class="label">Top pick right now</div><div class="who">${esc(top.name)}</div><div class="why">Score ${Math.round(top._score)} · strongest on ${esc(best.join(' and '))}</div>`;
+  $('#leader').innerHTML=`<div class="label">Top pick right now</div><div class="who">${esc(top.name)}</div><div class="why">Score ${Math.round(top._score)} \u00b7 strongest on ${esc(best.join(' and '))}</div>`;
 }
 function view(){ const h=location.hash.replace('#',''); return ['ranking','lineups','bands','calendar','my-bands'].includes(h)?h:'ranking'; }
 function render(){
   document.querySelectorAll('nav.tabs a').forEach(a=>a.setAttribute('aria-current',a.dataset.v===view()?'page':'false'));
   if(!fests.length){
-    $('#view').innerHTML=`<div class="state">${dbState==='loading'?'Loading festival data…':dbState==='error'?'Could not load festivals.json. If you opened index.html straight from disk, serve the folder instead (GitHub Pages, or “python -m http.server”).':'No festivals in festivals.json yet.'}</div>`;
+    $('#view').innerHTML=`<div class="state">${dbState==='loading'?'Loading festival data\u2026':dbState==='error'?'Could not load festivals.json. If you opened index.html straight from disk, serve the folder instead (GitHub Pages, or \u201cpython -m http.server\u201d).':'No festivals in festivals.json yet.'}</div>`;
     $('#leader').innerHTML=''; return;
   }
   const idx=analyse(); lastIdx=idx;
@@ -729,10 +786,11 @@ render();
   const st=LS('ms27-settings'); if(st?.weights) weights={...weights,...st.weights}; if(st?.filters) filters={...filters,...st.filters};
   picks=(LS('ms27-picks')||[]).filter(p=>p&&p.name&&Number.isFinite(Number(p.score))).map(p=>({id:p.id||slug(p.name),name:p.name,score:Number(p.score)}));
   try{
-    const [fr,mr]=await Promise.all([fetch('festivals.json',{cache:'no-cache'}),fetch('meta.json',{cache:'no-cache'}).catch(()=>null)]);
+    const [fr,mr,cr]=await Promise.all([fetch('festivals.json',{cache:'no-cache'}),fetch('meta.json',{cache:'no-cache'}).catch(()=>null),fetch('config.json',{cache:'no-cache'}).catch(()=>null)]);
     baseFests=await fr.json(); sync=mr&&mr.ok?await mr.json():null;
+    try{ const cfg=cr&&cr.ok?await cr.json():{}; SYNC_URL=String(cfg.syncUrl||'').replace(/\/+$/,''); }catch(e){}
   }catch(e){ dbState='error'; render(); return; }
-  dbState='ready'; loadLive(); applyLive(); render(); renderLive();
+  dbState='ready'; loadLive(); applyLive(); render(); renderLive(); pullSync();
   if(!liveData || Date.now()-liveData.at > LIVE_EVERY_H*3600e3) setTimeout(()=>liveCheck(false),800);
 })();
 })();

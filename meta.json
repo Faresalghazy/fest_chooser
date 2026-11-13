@@ -1,17 +1,23 @@
 {
- "updated": "2026-10-30",
- "changes": [
-  {
-   "date": "2026-10-30",
-   "festival": "Copenhell",
-   "text": "2027 4-day ticket price added: DKK 2,810 incl. fee (≈ €377). R.I.P. 4-day DKK 3,985.",
-   "url": "https://www.ticketmaster.dk/event/1010238744?language=da-dk&brand=copenhelldk"
-  },
-  {
-   "date": "2026-10-30",
-   "festival": "8 festivals",
-   "text": "Added Rock am Ring / Rock im Park, Tons of Rock, Rock Fest Barcelona, Mystic, Rockharz, Masters of Rock, Leyendas del Rock and Motocultor. (Metaldays was checked and left out: it closed in 2024.)",
-   "url": null
-  }
- ]
+"updated":"2026-11-13",
+"changes":[
+{
+"date":"2026-11-13",
+"festival":"Download Festival",
+"text":"First 2027 line-up wave added by hand (97 acts). Headliners: blink-182, Bring Me The Horizon, Evanescence; also Faith No More, The Prodigy, M\u00f6tley Cr\u00fce, Parkway Drive, Kreator, Orbit Culture. festivalhopper.de had not listed it yet.",
+"url":"https://chaoszine.net/download-festival-reveals-first-wave-of-bands-for-2027/"
+},
+{
+"date":"2026-10-30",
+"festival":"Copenhell",
+"text":"2027 4-day ticket price added: DKK 2,810 incl. fee (\u2248 \u20ac377). R.I.P. 4-day DKK 3,985.",
+"url":"https://www.ticketmaster.dk/event/1010238744?language=da-dk&brand=copenhelldk"
+},
+{
+"date":"2026-10-30",
+"festival":"8 festivals",
+"text":"Added Rock am Ring / Rock im Park, Tons of Rock, Rock Fest Barcelona, Mystic, Rockharz, Masters of Rock, Leyendas del Rock and Motocultor. (Metaldays was checked and left out: it closed in 2024.)",
+"url":null
+}
+]
 }
